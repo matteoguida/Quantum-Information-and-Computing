@@ -14,3 +14,4 @@ TODO
 - [Clara Eminente](https://github.com/ceminente) (University of Padova)
 - [Matteo Guida](https://github.com/matteoguida) (University of Padova)
 
+### Useful External Links:
