@@ -1,6 +1,7 @@
 # Quantum-Computing
 
 <img src=https://www.researchgate.net/publication/335028508/figure/fig1/AS:789466423762944@1565234871365/The-Bloch-sphere-provides-a-useful-means-of-visualizing-the-state-of-a-single-qubit-and.ppm width="500" height="450" border="0"/> 
+TODO
 
 ### Prerequisites
 Python versions used and supported:
@@ -15,3 +16,4 @@ TODO
 - [Matteo Guida](https://github.com/matteoguida) (University of Padova)
 
 ### Useful External Links:
+TODO
