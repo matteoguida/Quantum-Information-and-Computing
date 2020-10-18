@@ -1,3 +1,13 @@
+'''
+    Created on Oct 16, 2020
+
+    @author: Alberto Chimenti
+
+    Purpose: (PYTHON3 IMPLEMENTATION)
+        General purpose Q-learning approach for optimal quantum control protocols
+'''
+
+#%%
 import numpy as np
 ### Import time evolution library
 
@@ -5,7 +15,7 @@ class Environment:
     state = []
     goal = []
 
-    def __init__(self, qtarget=[1,1], qstart=[0,0], start=[0,-2], mag_field=[-4, -2, 0, +2, +4] history=False):
+    def __init__(self, qtarget=[1,1], qstart=[0,0], start=[0,-2], mag_field=[-4, -2, 0, +2, +4], history=False):
         # Check coefficients
         if len(qtarget)!=len(qstart): print("Warning: target and init coeffitients number don't match! \nExiting..."); break
         ### Quantum state data (not sure whether to save it in the environement)
@@ -21,7 +31,7 @@ class Environment:
             self.path = np.array([self.state])
 
     # the agent makes an action (0 is stay, 1 is up, 2 is down, 3 is right, 4 is left)
-    def move(self, action)#, qstate, reward_func):
+    def move(self, action):#, qstate, reward_func):
         field = self.action_map[action]
         ########
         self.qstate = ### time_ev(self.qstate, self.nqubit, field)
