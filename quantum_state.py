@@ -43,9 +43,21 @@ def time_evolution(psi, dt, field, trotter=True):
         pass
 
 
+def fidelity(target, psi):
+    F = np.abs(np.vdot(target, psi))
+    return F
+
+
 if __name__ == "__main__":
 
     H = hamiltonian(-2)
     print(H)
 
-    time_evolution([1,1], 0.05, -2)
+    target = np.array([0. + 0.j,-1/np.sqrt(2)-1/np.sqrt(2)*i])
+    psi = np.array([+1/np.sqrt(2)+1/np.sqrt(2)*i,0. + 0.j])
+
+    print(psi)
+    print(time_evolution(psi, 0.05, -2))
+
+    print(fidelity(psi, psi))
+    print(1/np.sqrt(2))
