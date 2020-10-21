@@ -45,7 +45,9 @@ def time_evolution(psi, dt, field, trotter=False):
             #implements evolution using spectral method for one qubit
 
             ep_state = np.array([field + np.sqrt(1 + field*field), 1], dtype=complex)
+            ep_state=ep_state/np.sqrt(np.vdot(ep_state,ep_state))
             em_state = np.array([field - np.sqrt(1 + field*field), 1], dtype=complex)
+            em_state=em_state/np.sqrt(np.vdot(em_state,em_state))
 
             ep_autoval = np.sqrt(1 + field*field)
             em_autoval = -np.sqrt(1 + field*field)
@@ -54,7 +56,9 @@ def time_evolution(psi, dt, field, trotter=False):
             cm = np.vdot(em_state,psi)
 
             psi= cp * np.exp(- i * ep_autoval * dt) * ep_state + cm * np.exp(- i * em_autoval * dt) * em_state
-            psi = psi/np.sqrt(np.vdot(psi,psi))
+            
+            #print("Already normalized?", np.vdot(psi,psi))
+            #psi = psi/np.sqrt(np.vdot(psi,psi))
             #print("Check:", np.vdot(psi,psi))
             return psi
         else:
