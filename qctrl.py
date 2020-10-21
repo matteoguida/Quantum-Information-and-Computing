@@ -11,17 +11,18 @@
 import numpy as np
 import scipy.special as sp
 
+#----CLARA-------------------------
 #plotting on Bloch sphere
 import matplotlib as mpl
 from pylab import *
 from qutip import *
 from matplotlib import cm
 import imageio
-#-----------------------
+#----------------------------------
 
 class Environment:
 
-    def __init__(self, qtarget, qstart, start=[0,0], mag_field=[-4, 0, +4], history=False):
+    def __init__(self, qtarget, qstart, start=[0,0], mag_field=[-4, 0, +4], history=False): #SPECTRAL METHOD DOES NOT ALLOW h_field=0
         # Check coefficients
         if len(qtarget)!=len(qstart): 
             print("Warning: target and init coeffitients number don't match! \nExiting...") 
@@ -45,7 +46,7 @@ class Environment:
             - FUNCTION to use for computing the reward
         '''
         field = self.action_map[action]
-        qstate = time_ev_func(qstate, dt, field)
+        qstate = time_ev_func(qstate, dt, field, trotter=False)
         reward = reward_func(self.qtarget, qstate)
         self.state = [self.state[0]+1, action]
         if self.history:
@@ -72,7 +73,7 @@ class Agent:
         self.sarsa = sarsa
         # initialize Q table
         # The indexing will be index(t)*len(h)+index(h)
-        self.qtable = np.ones([nstates*nactions, nactions], dtype = float) * max_reward / (1 - discount) ###CLARA perché q è inizilizzata così?
+        self.qtable = np.ones([nstates*nactions, nactions], dtype = float) * max_reward / (1 - discount) 
         if qtable is not None:
             qtable = np.array(qtable)
             if np.shape(qtable)==[nstates*nactions, nactions]:
@@ -94,7 +95,7 @@ class Agent:
 
     # action policy: implements epsilon greedy and softmax
     def select_action(self, state, epsilon):
-        qval = self.qtable[state]   #CLARA: come fa questo ad essere solo un indice? Cioé state contiene un numero che è la versione indicizzata di (t, h). Q invece è una matrice...
+        qval = self.qtable[state]   
         prob = []
         if (self.softmax):
             # use Softmax distribution
@@ -133,11 +134,6 @@ def get_time_grid(t_max, dt):
     tdict = {i : span[i] for i in range(len(span))}
     return tdict
 
-def qutip_qstate(coefs):
-    up = basis(2,0)
-    down = basis(2,1)
-    return coefs[0]*up + coefs[1]*down
-
 
 if __name__ == "__main__":
 
@@ -148,10 +144,15 @@ if __name__ == "__main__":
     from tqdm import tqdm
     import matplotlib.pyplot as plt
 
+    #-----CLARA-------------------------------------------
+    #custom module for visualization purpose
+    import gif 
+    #-----------------------------------------------------
+
     out_dir = Path("test")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    episodes = 200         # number of training episodes
+    episodes = 101         # number of training episodes
     discount = 0.9          # exponential discount factor
     t_max = 3               # simulation time in seconds
     dt = 0.025               # timestep in seconds
@@ -180,10 +181,11 @@ if __name__ == "__main__":
         qstate = env.qstart
         reward = 0
 
-        if index%100 == 0:
-            b = Bloch()
-            duration=0.005
-            images=[]
+        #-----CLARA------------------------
+        #storing states for plotting purposes
+        qstates = []
+        #---------------------------------
+
 
         # run episode
         for step in range(0, episode_length):
@@ -200,20 +202,18 @@ if __name__ == "__main__":
             reward += result[1]
             state = result[0]
 
-            if index%100==0:
-                b.clear()
-                b.add_states(qutip_qstate(qstart))
-                b.add_states(qutip_qstate(qtarget))
-                b.add_states(qutip_qstate(qstate))
-                filename='temp_file.png'
-                b.save(filename)
-                images.append(imageio.imread(filename))
+        #-----CLARA------------------------------
+            #storing states for plotting purposes
+            qstates.append(qstate)
 
-        if index%100==0:       
-            imageio.mimsave('bloch_anim_'+str(index)+'.gif', images, duration=duration)
+        if index%100 == 0:
+            gif.create_gif(qstates, qstart, qtarget, "bloch_anim_"+str(index)+".gif")
+        #----------------------------------------
+
 
         reward /= episode_length
         rewards.append(reward)
+
         # periodically save the agent
         if ((index + 1) % 100 == 0):
             #agent_state = learner.extract_state()
@@ -221,15 +221,18 @@ if __name__ == "__main__":
             #with open(out_dir / name, 'wb') as agent_file:
             #    dill.dump(agent_state, agent_file)
             print('\nEpisode ', index + 1, ': the agent has obtained an average reward of ', reward, ' starting from position ', env.qstart) 
+
     # plot result
     fname = 'train_result'+'_'+str(a)+'.png'
     fname = out_dir / fname
-    plt.close('all')
-    fig = plt.figure(figsize=(10,6))
-    plt.scatter(range(episodes), rewards, marker = '.', alpha=0.8)
-    plt.xlabel('Episode number', fontsize=14)
-    plt.ylabel('Average reward', fontsize=14)
-    plt.savefig(fname)
-    plt.show()
-    plt.close(fig=fig)
+    #plt.close('all')
+    #fig = plt.figure(figsize=(10,6))
+    #plt.scatter(range(episodes), rewards, marker = '.', alpha=0.8)
+    #plt.xlabel('Episode number', fontsize=14)
+    #plt.ylabel('Average reward', fontsize=14)
+    #plt.savefig(fname)
+    #plt.show()
+    #plt.close(fig=fig)
 
+
+# %%
