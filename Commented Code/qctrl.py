@@ -15,9 +15,9 @@ class Environment:
 
     def __init__(self, start=[0,0], mag_field=[-4, 0, +4], history=False):
         # Check coefficients
-        if len(qtarget)!=len(qstart): 
-            print("Warning ---> target and init coeffitients number don't match! \nExiting...") 
-            exit
+        #if len(qtarget)!=len(qstart): 
+        #    print("Warning ---> target and init coeffitients number don't match! \nExiting...") 
+        #    exit
         ### Quantum state data (not sure whether to save it in the environement)
         #self.qtarget = qtarget
         #self.qstart = qstart
@@ -25,7 +25,8 @@ class Environment:
         self.state = np.asarray(start)
         self.action_map = {i : mag_field[i] for i in range(len(mag_field))}
         if self.history == True:
-            self.path = np.array(self.state)
+            self.path = []
+            self.path.append(list(self.state))
 
     # the agent makes an action (0 is -bound, LAST is +bound)
     def move(self, action, qstate, dt, time_ev_func):
@@ -33,7 +34,7 @@ class Environment:
 
         Given an action (i.e. next value of the field) this function computes the time evolved quantum state
         changing the hamiltonian with the new value of the field and returns the new qstate along with the new
-        agent state (new time index e and new field value).
+        agent state (new time index e and new field index).
 
         Inputs:
         #action: integer, action index
@@ -43,14 +44,14 @@ class Environment:
 
         Outputs:
         #self.state: np.array, new state according to taken action
-                     self.state[0]=indexed time, self.state[1]=field value
+                     self.state[0]=indexed time, self.state[1]=field index
         #qstate: np.array(dtype=complex), vector containing coefficients of the time evolved quantum state 
         '''
         field = self.action_map[action]
         qstate = time_ev_func(qstate, dt, field)#, euler=True)
         self.state = [self.state[0]+1, action]
         if self.history:
-            self.path = np.append(self.path, [self.state], axis=0)
+            self.path.append(list(self.state))
         return self.state, qstate
 
 class Agent:
@@ -102,7 +103,7 @@ class Agent:
 
         Inputs:
         #state: np.array, current agent state after taking the first action
-                self.state[0]=indexed time, self.state[1]=field value
+                self.state[0]=indexed time, self.state[1]=field index
         #epsilon: float, "greedynes parameter"
 
         Outputs:
@@ -168,7 +169,7 @@ class Agent:
 
 
 def train_agent(agent, qtarget, qstart, start, mag_field, dt, time_ev_func, 
-                fidelity_func, episodes, episode_length, epsilon, alpha, verbose=None, check_norm=True):
+                fidelity_func, episodes, episode_length, epsilon, alpha, verbose=None, check_norm=True, make_gif=2000):
 
     '''
     Training function. The function trains the agent for n=episodes episodes, each of whom lasts episode_length time steps of length dt.
@@ -181,7 +182,7 @@ def train_agent(agent, qtarget, qstart, start, mag_field, dt, time_ev_func,
     #qtarget: np.array(dtype=complex), vector containing coefficients of the TARGET quantum state
     #qstart: np.array(dtype=complex), vector containing coefficients of the STARTING quantum state
     #start: np.array, starting agent state 
-            self.state[0]=indexed time, self.state[1]=field value
+            self.state[0]=indexed time, self.state[1]=field index
     #mag_field: list, list of values that the agent can be in
     #dt: float, timestep
     #time_ev_func: function, time evolution function
@@ -190,20 +191,27 @@ def train_agent(agent, qtarget, qstart, start, mag_field, dt, time_ev_func,
     #episodes_length: float, length of a single training episode
     #epsilon: float, "greedyness parameter"
     #alpha: float, learning rate
-    #verbose: integer, in not None, informations on the status of learning are provided every "Verbose" episodes
-    #check_norm: boolean, if "True", check on norm conservatio  is done everytime the state is evolved.
+    #verbose: integer, if not None, informations on the status of learning are provided every "Verbose" episodes
+    #make_gif: integer, if not None, a gif with the path of the state is created every "make_gif" episodes
+    #check_norm: boolean, if "True", check on norm conservatio  is done everytime the state is evolved
 
     Outputs:
     #env: evolved environment (state and qstate)
     #reward: list, list of the rewards obtained
+    #paths: list, list of lists containing paths (saved every "verbose" episodes)
     '''
     
     from tqdm import tqdm
+    from gif import create_gif
 
     rewards = []
+    #-----CLARA------------------------
+    #storing paths for plotting purposes
+    paths = []
+    #---------------------------------
     for index in tqdm(range(0, episodes)):
         # initialize environment
-        env = Environment(start=start, mag_field=mag_field) 
+        env = Environment(start=start, mag_field=mag_field, history=True) 
         state = env.state
         qstate = qstart
         reward = 0
@@ -218,24 +226,24 @@ def train_agent(agent, qtarget, qstart, start, mag_field, dt, time_ev_func,
             # find indexed version of the state 
             state_index = state[0] * len(mag_field) + state[1]
             # choose an action
-            action = learner.select_action(state_index, epsilon[index])
+            action = agent.select_action(state_index, epsilon[index])
             # the agent moves in the environment
             state, qstate = env.move(action, qstate, dt, time_ev_func)#fidelity)
             # check norm conservation
             if check_norm and (np.abs(1 - fidelity_func(qstate, qstate)) > 1e-13):
                 print("Warning ---> Norm is not conserved")
             # compute reward
-            if step == episode_length-1: # Comment if reward has to be computed at every timestep 
+            if _ == episode_length-1: # Comment if reward has to be computed at every timestep 
                 reward = fidelity_func(qtarget, qstate)
             # Q-learning update
             next_index = state[0] * len(mag_field) + state[1]
-            learner.update(state_index, action, reward, next_index, alpha[index], epsilon[index])
+            agent.update(state_index, action, reward, next_index, alpha[index], epsilon[index])
 
         #-----CLARA------------------------------
             #storing states for plotting purposes
             qstates.append(qstate)
 
-        if (index)%2000 == 0:
+        if (make_gif is not None) and ((index) % make_gif == 0):
             create_gif(qstates, qstart, qtarget, "bloch_anim_"+str(index)+".gif")
         #----------------------------------------
         rewards.append(reward)
@@ -246,8 +254,10 @@ def train_agent(agent, qtarget, qstart, start, mag_field, dt, time_ev_func,
             #name = 'agent'+'_'+str(a)+'.obj'
             #with open(out_dir / name, 'wb') as agent_file:
             #    dill.dump(agent_state, agent_file)
+            paths.append(env.path) #stores every verbose paths
             print('\nEpisode ', index + 1, ': the agent has obtained fidelity eqal to', reward, '\nStarting from position ', qstart)
-    return env, rewards
+
+    return env, rewards, paths
 
 
 def get_time_grid(t_max, dt):
@@ -300,6 +310,9 @@ if __name__ == "__main__":
     env, rewards = train_agent(learner, qtarget, qstart, start, mag_field,
                     dt, time_evolution, compute_fidelity, episodes, episode_length, 
                     epsilon, alpha, verbose=5000)
+
+
+
     # plot result
     fname = 'train_result'+'_'+str(a)+'.png'
     fname = out_dir / fname
