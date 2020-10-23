@@ -156,7 +156,7 @@ class Agent:
 
 
 def train_agent(agent, qtarget, qstart, start, mag_field, dt, time_ev_func, 
-                fidelity_func, episodes, episode_length, epsilon, alpha, verbose=None, check_norm=True, make_gif=None):
+                fidelity_func, episodes, episode_length, epsilon, alpha, verbose=None, check_norm=True, make_gif=False):
     '''
     Training function. The function trains the agent for n=episodes episodes, each of whom lasts episode_length time steps of length dt.
     Fidelity_func is used as the reward function.
@@ -288,7 +288,7 @@ if __name__ == "__main__":
     start = [0,0]
     env, rewards, _ = train_agent(learner, qtarget, qstart, start, mag_field,
                     dt, time_evolution, compute_fidelity, episodes, episode_length, 
-                    epsilon, alpha)
+                    epsilon, alpha, make_gif=1000)
 
     # plot result
     fname = 'train_result'+'_'+str(a)+'.png'

@@ -76,7 +76,7 @@ def time_evolution(psi, dt, field, euler=False):
 
 
 def compute_fidelity(target, psi):
-    F = np.abs(np.vdot(target, psi))
+    F = np.abs(np.vdot(target, psi))**2
     return F
 
 
