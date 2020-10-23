@@ -12,6 +12,7 @@
 
 #%%
 import numpy as np
+from scipy.constants import hbar
 '''
     Global variable for easier use (BEWARE OF LOOP INDICES CHOICE)
 '''
@@ -22,20 +23,30 @@ def hamiltonian(field, single=True):
         Flexible implementation of naive ising hamiltonian
     '''
     if single:
-        H=np.array([[field, 1],[1, -field]], dtype=complex)
+        H=np.array([[-field, -1],[-1, field]], dtype=complex)
         return(H)
     else:
         pass
 
 
-def time_evolution(psi, dt, field, trotter=False):
+def time_evolution(psi, dt, field, euler=False):
     '''
-        Flexible implementation of time evolution of pure quantum states
-        for a variable number of qbits
-        --> To implement other options than Trotter-Suzuki decomposition for time
-            evolution unitary operator
+    Function to implement time evolution for a pure quantum state.
+    ! WARNING: as of 22.10.2020 exact method only implements time evolution 
+               according to the hamiltonian H = -(Sx + field*Sz) for 1 QuBit.
+
+    Inputs:
+    # psi: np.array(dtype=complex), vector containing coefficients of the state to evolve
+    # dt: float, timestep
+    # field: float, magnetic field (parameter of the hamiltonian)
+    #euler: boolean, if "True" time evolution operator is approximated using euler method. 
+            If "False" exact method is used (spectral method).
+            Default value is "False".
+    Outputs:
+    # psi: np.array(dtype=complex), vector containing coefficients of the evolved state.
+           
     '''
-    if trotter:
+    if euler:
         identity = np.diag(np.ones(len(psi)))
         psi = np.dot((identity -i*hamiltonian(field)*dt), psi)
         return(psi)
@@ -44,24 +55,20 @@ def time_evolution(psi, dt, field, trotter=False):
         if len(psi) == 2: #this method only works for one qubit
             #implements evolution using spectral method for one qubit
 
-            ep_state = np.array([field + np.sqrt(1 + field*field), 1], dtype=complex)
+            #compute eigenstates of hamiltonian H = -(Sx + field*Sz) and normalize them
+            ep_state = np.array([field - np.sqrt(1 + field*field), 1], dtype=complex)
             ep_state=ep_state/np.sqrt(np.vdot(ep_state,ep_state))
-            em_state = np.array([field - np.sqrt(1 + field*field), 1], dtype=complex)
+            em_state = np.array([field + np.sqrt(1 + field*field), 1], dtype=complex)
             em_state=em_state/np.sqrt(np.vdot(em_state,em_state))
-
+            #compute eigenvalues
             ep_autoval = np.sqrt(1 + field*field)
             em_autoval = -np.sqrt(1 + field*field)
-
+            #compute projections of the state to evolve over the eigenstates
             cp = np.vdot(ep_state,psi)
             cm = np.vdot(em_state,psi)
-
-            psi= cp * np.exp(- i * ep_autoval * dt) * ep_state + cm * np.exp(- i * em_autoval * dt) * em_state
+            #compute evolved state
+            psi= cp * np.exp(- i * ep_autoval * dt / hbar) * ep_state + cm * np.exp(- i * em_autoval * dt / hbar) * em_state
             
-            ##TO DO: insert check normalization
-
-            #print("Already normalized?", np.vdot(psi,psi))
-            #psi = psi/np.sqrt(np.vdot(psi,psi))
-            #print("Check:", np.vdot(psi,psi))
             return psi
         else:
             pass
@@ -69,10 +76,52 @@ def time_evolution(psi, dt, field, trotter=False):
 
 
 def compute_fidelity(target, psi):
-    F = np.abs(np.vdot(target, psi))
+    F = np.abs(np.vdot(target, psi))**2
     return F
 
 
+
+def evolution_from_protocol(qstart, qtarget, protocol, time_ev_function, dt, make_gif=None):
+    import gif
+    from tqdm import tnrange
+
+    '''
+
+    Provided a series of h field values this function evolve a qstart quantum state. If make_gid is not None
+    it also plots the resulting evolution on the bloch sphere.
+
+    Inputs:
+    # qstart, qtarget: respectively the target ans start state
+    # protocol: list, list of values of the field at each timestep
+    # time_ev_func: function, function for time evolution
+    # dt: float, timestep
+    # create_gif = str, if None no gif is created, if present must be the name of the output gif
+
+    Outputs:
+    # qstates: list, list of states as np.arrays(dtype=complex)
+    '''
+    qstate = qstart
+
+    qstates = [qstate]
+
+    for (h, j) in zip(protocol, tnrange(protocol)):
+
+        qstate = time_ev_function(qstate, dt, h, euler=False)
+        qstates.append(qstate)
+    
+    if make_gif:
+        gif.create_gif(qstates, qstart, qtarget, make_gif)
+        return qstates
+    else:
+        return qstates
+
+
+
+
+
+
+
+###########################################################################################################
 if __name__ == "__main__":
 
     H = hamiltonian(-2)
@@ -81,20 +130,30 @@ if __name__ == "__main__":
     target = np.array([0. + 0.j,-1/np.sqrt(2)-1/np.sqrt(2)*i])
     psi = np.array([+1/np.sqrt(2)+1/np.sqrt(2)*i,0. + 0.j])
 
+    '''
     print(psi)
     for h in [-4, -2, 0, 2, 4]:
         print("Field=", h)
         print("\n")
-        psi_trotter = time_evolution(psi, 0.05, h, trotter=True)
+        psi_trotter = time_evolution(psi, 0.05, h, euler=True)
         print("Trotter:", psi_trotter)
         print("Fidelity_trotter", compute_fidelity(psi_trotter, psi_trotter))
         print("\n")
-        psi_spectral= time_evolution(psi, 0.05, h, trotter=False)
+        psi_spectral= time_evolution(psi, 0.05, h, euler=False)
         print("Spectral:", psi_spectral)
         print("Fidelity_spectral", compute_fidelity(psi_spectral, psi_spectral))
         print("\n")
         print("\n")
-    print(compute_fidelity(psi, psi))
-    print(1/np.sqrt(2))
+    #print(compute_fidelity(psi, psi))
+    #print(1/np.sqrt(2))
+    '''
+
+    h = [0]*10
+    dt = 0.0000491
+
+    list_of_states = evolution_from_protocol(psi, target, h, time_evolution, dt, make_gif="bloch_gif.gif")
+
+
+# %%
 
 # %%
