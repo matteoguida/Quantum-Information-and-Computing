@@ -104,7 +104,7 @@ def evolution_from_protocol(qstart, qtarget, protocol, time_ev_function, dt, mak
 
     qstates = [qstate]
 
-    for (h, j) in zip(protocol, tnrange(protocol)):
+    for h in protocol:
 
         qstate = time_ev_function(qstate, dt, h, euler=False)
         qstates.append(qstate)
