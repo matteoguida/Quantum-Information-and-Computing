@@ -1,8 +1,7 @@
 
 #plotting on Bloch sphere
 import matplotlib as mpl
-from pylab import *
-from qutip import *
+from qutip import basis, Bloch
 from matplotlib import cm
 import imageio
 from mpl_toolkits.mplot3d import Axes3D
@@ -25,6 +24,8 @@ def qutip_qstate(coefs):
 
 
 def create_gif(qstates, qstart, qtarget, name):
+    from tqdm import tqdm
+    from quantum_state import compute_fidelity
     '''
     Inputs:
     # qstates: list of states as np.arrays
@@ -32,17 +33,13 @@ def create_gif(qstates, qstart, qtarget, name):
     # name: name of the output gif
     '''
     
-
-    fig = figure()
-    ax = Axes3D(fig,azim=-40,elev=30)
-    b = Bloch(axes=ax)
-
+    b = Bloch()
 
     b = Bloch()
-    duration=0.05 #framerate
+    duration=20 #framerate
     images=[]
 
-    for (qstate,i) in zip(qstates, np.arange(0,len(qstates))):
+    for (qstate,i) in tqdm(zip(qstates, range(0,len(qstates)))):
 
         b.clear()
 
@@ -56,8 +53,8 @@ def create_gif(qstates, qstart, qtarget, name):
             b.add_states(qutip_qstate(qstates[previous]),"point") #plots previous visited states as points
         b.add_states(qutip_qstate(qstate))
         filename='t.png'
-        ax.set_title(str(i), fontsize=30)
+        #filename=str(i)+'-'+str(compute_fidelity(qtarget,qstate))+'t.png'
         b.save(filename)
         images.append(imageio.imread(filename))
 
-    imageio.mimsave(name, images, duration=duration)
+    imageio.mimsave(name, images, 'GIF', fps=duration)
