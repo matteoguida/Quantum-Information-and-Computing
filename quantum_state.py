@@ -226,4 +226,3 @@ if __name__ == "__main__":
     list_of_states = evolution_from_protocol(psi, target, h, spectral_time_evolution, dt, make_gif="bloch_gif.gif")
 
 
-#%%

@@ -36,10 +36,10 @@ def create_gif(qstates, qstart, qtarget, name):
     b = Bloch()
 
     b = Bloch()
-    duration=20 #framerate
+    duration=5 #framerate
     images=[]
 
-    for (qstate,i) in tqdm(zip(qstates, range(0,len(qstates)))):
+    for (qstate,i) in zip(qstates, range(0,len(qstates))):
 
         b.clear()
 
