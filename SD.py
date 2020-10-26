@@ -22,11 +22,12 @@ def stochastic_descent(qstart, qtarget, L, T, dt, iterations, flips,exp_decay_fl
     fidelity = compute_fidelity(qstart, qtarget)
     fidelity_values=[fidelity]
     flips_iter = flips
-    for j in tnrange(iterations):
+    for j in range(iterations):
 
         psi = deepcopy(qstart)
         if exp_decay_flip is True:
             flips_iter=int(exp_dec(iteration=j,percentage_flip=flips,niterations=iterations))
+
         index_update = np.random.randint(0, nsteps-1,size=int(nsteps/100*flips_iter)) # Select an index for the update.
         temp_protocol[index_update] = random_protocol[index_update]*(-1) # Try to update that index.
         
@@ -42,13 +43,13 @@ def stochastic_descent(qstart, qtarget, L, T, dt, iterations, flips,exp_decay_fl
         if temp_fidelity>fidelity: # Update the change only if better fidelity
             random_protocol=deepcopy(temp_protocol)
             fidelity=temp_fidelity
-            print("UPDATED ", "ITERATION N°",j )
+            #print("UPDATED ", "ITERATION N°",j )
             #best_reached_state = psi #unused but useful for debugging
         elif metropolis_choice is True:
             if np.random.uniform(0,1)<np.exp(-beta*(temp_fidelity-fidelity)):
                 random_protocol=deepcopy(temp_protocol)
                 fidelity=temp_fidelity
-                print("UPDATED LOWER FIDELITY ", "ITERATION N°",j )
+                #print("UPDATED LOWER FIDELITY ", "ITERATION N°",j )
                 #best_reached_state = psi 
         fidelity_values.append(fidelity)
 
