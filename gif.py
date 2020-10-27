@@ -1,10 +1,8 @@
 
 #plotting on Bloch sphere
-import matplotlib as mpl
 from qutip import basis, Bloch
-from matplotlib import cm
+import matplotlib.pyplot as plt
 import imageio
-from mpl_toolkits.mplot3d import Axes3D
 
 def qutip_qstate(coefs):
     '''
@@ -53,7 +51,6 @@ def create_gif(qstates, qstart, qtarget, name):
             b.add_states(qutip_qstate(qstates[previous]),"point") #plots previous visited states as points
         b.add_states(qutip_qstate(qstate))
         filename='t.png'
-        #filename=str(i)+'-'+str(compute_fidelity(qtarget,qstate))+'t.png'
         b.save(filename)
         images.append(imageio.imread(filename))
 

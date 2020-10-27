@@ -65,7 +65,8 @@ class Agent:
         self.sarsa = sarsa
         # initialize Q table
         # The indexing will be index(t)*len(h)+index(h)
-        self.qtable = np.ones([nstates*nactions, nactions], dtype = float) * max_reward / (nactions) #"normalize" the QTable
+        # NB: Adding #naction supplementary states in order to update the last ones
+        self.qtable = np.zeros([nstates+nactions, nactions], dtype = float)# * max_reward / (nactions) #"normalize" the QTable
         if qtable is not None:
             qtable = np.array(qtable)
             if np.shape(qtable)==[nstates*nactions, nactions]:
@@ -221,6 +222,11 @@ def train_agent(agent, qtarget, qstart, start, mag_field, dt, time_ev_func,
         #----------------------------------
         # run episode
         for j in range(0, episode_length):
+            ##########
+            #if j > 300 and j%100==0:
+            #    agent.softmax = np.logical_not(agent.softmax)
+            ##########
+
             # find indexed version of the state 
             state_index = env.state[0] * len(mag_field) + env.state[1]
             # choose an action
@@ -233,8 +239,10 @@ def train_agent(agent, qtarget, qstart, start, mag_field, dt, time_ev_func,
             #storing states for plotting purposes
             qstates.append(qstate)
             # compute reward
-            #if step == episode_length-1: # Uncomment if only the last reward has to be counted
-            reward = fidelity_func(qtarget, qstate)
+            if j == episode_length-1: # Uncomment if only the last reward has to be counted
+                reward = fidelity_func(qtarget, qstate)
+                #print("\nComputing reward at itaration {} in state {} und reward {}".format(j, state_index, reward))
+                #print("\n-----> qtable", agent.qtable[state_index])
             # Q-learning update
             next_index = env.state[0] * len(mag_field) + env.state[1]
             agent.update(state_index, action, reward, next_index, alpha[index], epsilon[index])
@@ -243,10 +251,11 @@ def train_agent(agent, qtarget, qstart, start, mag_field, dt, time_ev_func,
             if reward == 1 - 1e-4:
                 print("----> Earlystopping at iteration {} with reward {}".format(j, reward))
         if best_reward <= reward:
+            print("----> Best reward {} at iteration {}".format(reward, index))
             best_reward = reward
             best_protocol = np.copy(env.path)
             best_protocol_qstate = qstates
-            agent = force_learn(agent, best_protocol, best_reward, len(mag_field), episode_length)
+            #agent = force_learn(agent, best_protocol, best_reward, len(mag_field), episode_length)
         # force learn best protocol every 100 episodes
         #if index > 2000 and index%100 == 0:
         #    agent = force_learn(agent, best_protocol, best_reward, len(mag_field), episode_length)
@@ -265,7 +274,7 @@ def train_agent(agent, qtarget, qstart, start, mag_field, dt, time_ev_func,
             #    dill.dump(agent_state, agent_file)
             paths.append(env.path) #stores every verbose paths
             print('\nEpisode ', index + 1, ': the agent has obtained fidelity eqal to', reward, '\nStarting from position ', qstart)
-    return env, rewards, qstates, [best_protocol_qstate, best_reward]
+    return env, rewards, qstates, [best_protocol_qstate, best_reward, best_protocol]
 
 
 def generate_protocol(agent, qstart, start, mag_field, dt, time_ev_func, fidelity_func, episode_length, check_norm=True):
@@ -312,15 +321,20 @@ if __name__ == "__main__":
     out_dir = Path("test")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    episodes = 5001         # number of training episodes
-    discount = 0.9          # exponential discount factor
-    t_max = 2.4               # simulation time in seconds
+    episodes = 10001         # number of training episodes
+    discount = 1          # exponential discount factor
+    t_max = 2              # simulation time in seconds
     dt = 0.05               # timestep in seconds
     time_map = get_time_grid(t_max, dt)
     episode_length = len(time_map)         # maximum episode length
-    mag_field = [-0.1, 0, 0.1]
+    mag_field = [-0.5, 0, 0.5]
     nstates = episode_length*len(mag_field) # total number of states
     nactions = len(mag_field)              # total number of possible actions
+    print("\nStarting with the following parameters:")
+    print("---> T=", t_max)
+    print("---> dt=", dt)
+    print("---> N_states=", nstates)
+    print("---> Actions=", mag_field)
 
     # Define target and starting state
     qtarget = np.array([-1/np.sqrt(4) - 1/np.sqrt(4)*i, 1/np.sqrt(2) + 0.j])
@@ -338,7 +352,8 @@ if __name__ == "__main__":
                     dt, spectral_time_evolution, compute_fidelity, episodes, 
                     episode_length, epsilon, alpha)#, make_gif=2000)
 
-    create_gif(best[0], qstart, qtarget, 'protocolo'+str(best[1])+'.gif')
+    print("Best protocol Reward: {}".format(best[1]))
+    #create_gif(best[0], qstart, qtarget, 'protocolo'+str(t_max)+'-'+str(dt)+'.gif')
 
     # plot result
     fname = 'train_result'+'_'+str(a)+'.png'
@@ -353,12 +368,15 @@ if __name__ == "__main__":
     plt.close(fig=fig)
 
     # generate final protocol
-    final_protocol, protocol_qstate = generate_protocol(learner, qstart, start, 
-                                    mag_field, dt, spectral_time_evolution, 
-                                    compute_fidelity, episode_length)
-                                
-#%%
-print(learner.qtable)
+    #final_protocol, protocol_qstate = generate_protocol(learner, qstart, start, 
+    #                                mag_field, dt, spectral_time_evolution, 
+    #                                compute_fidelity, episode_length)
+
+#%%           
+print(learner.qtable.shape)              
+for i in range(learner.qtable.shape[0]):
+    #if np.any(learner.qtable[i]!=0):
+    print(learner.qtable[i], i)
 
 #%%
 
