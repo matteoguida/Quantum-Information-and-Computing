@@ -10,11 +10,11 @@ def exp_dec(iteration,percentage_flip,niterations):
     tau =  niterations/np.log(percentage_flip)
     return percentage_flip * np.exp(-iteration/tau)
 
-def stochastic_descent(qstart, qtarget, L, T, dt, iterations, flips,exp_decay_flip, field_list,beta,metropolis_choice,verbose, check_norm):
+def stochastic_descent(qstart, qtarget, L, T, nsteps, iterations, flips,exp_decay_flip, field_list,beta,metropolis_choice,verbose, check_norm):
 
     np.random.seed(213)
 
-    nsteps = int(T/dt)
+    dt = T/nsteps
 
     random_protocol = np.array(choices(field_list, k=nsteps)) # Define a random protocol, sampling without replacement from a list. 
     temp_protocol=deepcopy(random_protocol)
