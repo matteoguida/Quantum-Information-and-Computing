@@ -155,20 +155,17 @@ class Agent:
             name = name + '_softmax'
         return name
 
-def force_learn(agent, best_protocol, best_reward, n_actions, episode_length):
-    '''
-        Renormalizes the Q-table to the value of the best action probability
-    '''
-    #AIUTO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    best_indexes = best_protocol[:,0]*n_actions + best_protocol[:,1]
-    for i, idx in enumerate(best_indexes):
-        if np.max(agent.qtable[idx]) > (best_reward/episode_length) and best_reward > 0:
-            agent.qtable[idx] *= best_reward/(episode_length*np.max(agent.qtable[idx]))#agent.qtable[idx, best_protocol[:,1][i]]
-            #print('\n',best_reward/(np.max(agent.qtable[idx])*episode_length))#agent.qtable[idx, best_protocol[:,1][i]])
-        agent.qtable[idx, best_protocol[:,1][i]] = best_reward/n_actions
-    print("\n----> Succesfully force learned best protocol with reward: {}".format(best_reward))
-    return agent
-
+    def learn_policy(self, protocol, rewards, n_actions, alpha):
+        '''
+            Asynchronous update for the Q-table of the given protocol
+        '''
+        indexes = protocol[:,0]*n_actions + protocol[:,1]
+        for i in np.arange(len(indexes)-3, 0, -1):
+            # calculate long-term reward with bootstrap method
+            observed = rewards[i] + self.discount * self.qtable[indexes[i+1], protocol[:,1][i+2]]
+            # bootstrap update
+            self.qtable[indexes[i], protocol[:,1][i+1]] = self.qtable[indexes[i], protocol[:,1][i+1]] * (1 - alpha) + observed * alpha
+        #print("\n----> Succesfully force learned best protocol with reward: {}".format(best_reward))
 
 
 def train_agent(agent, qtarget, qstart, start, mag_field, dt, time_ev_func, 
@@ -216,6 +213,7 @@ def train_agent(agent, qtarget, qstart, start, mag_field, dt, time_ev_func,
         env = Environment(start=start, mag_field=mag_field, history=True)
         qstate = qstart
         reward = 0
+        ep_reward = []
         #-----CLARA------------------------
         #storing states for plotting purposes
         qstates = [qstart]
@@ -241,31 +239,29 @@ def train_agent(agent, qtarget, qstart, start, mag_field, dt, time_ev_func,
             # compute reward
             if j == episode_length-1: # Uncomment if only the last reward has to be counted
                 reward = fidelity_func(qtarget, qstate)
-                #print("\nComputing reward at itaration {} in state {} und reward {}".format(j, state_index, reward))
-                #print("\n-----> qtable", agent.qtable[state_index])
+            ep_reward.append(reward) # reward for updating
             # Q-learning update
-            next_index = env.state[0] * len(mag_field) + env.state[1]
-            agent.update(state_index, action, reward, next_index, alpha[index], epsilon[index])
+            #next_index = env.state[0] * len(mag_field) + env.state[1]
+            #agent.update(state_index, action, reward, next_index, alpha[index], epsilon[index])
         ####--ALBERTO----------------------------
             # earlystopping
             if reward == 1 - 1e-4:
                 print("----> Earlystopping at iteration {} with reward {}".format(j, reward))
-        if best_reward <= reward:
-            print("----> Best reward {} at iteration {}".format(reward, index))
+        protocol = np.copy(env.path)
+        protocol = np.append(protocol, [[0,0]], axis=0)
+        agent.learn_policy(protocol, ep_reward, len(mag_field), alpha[index])
+
+        if best_reward <= ep_reward[-1]:
+            #print("----> Best reward {} at iteration {}".format(reward, index))
             best_reward = reward
             best_protocol = np.copy(env.path)
             best_protocol_qstate = qstates
-            #agent = force_learn(agent, best_protocol, best_reward, len(mag_field), episode_length)
-        # force learn best protocol every 100 episodes
-        #if index > 2000 and index%100 == 0:
-        #    agent = force_learn(agent, best_protocol, best_reward, len(mag_field), episode_length)
-        ####-------------------------------------
+        rewards.append(reward) # Rewards for plotting
         #-----CLARA------------------------------
         if (make_gif is not None) and ((index) % make_gif == 0):
             print("\n----> Saving gif for iteration "+str(index)+" as bloch_anim_"+str(index)+".gif......")
             create_gif(qstates, qstart, qtarget, "bloch_anim_"+str(index)+".gif")
         #----------------------------------------
-        rewards.append(reward)
         # periodically save the agent
         if (verbose is not None) and ((index + 1) % verbose == 0):
             #agent_state = learner.extract_state()
@@ -321,13 +317,13 @@ if __name__ == "__main__":
     out_dir = Path("test")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    episodes = 10001         # number of training episodes
+    episodes = 5001         # number of training episodes
     discount = 1          # exponential discount factor
-    t_max = 2              # simulation time in seconds
+    t_max = 2.4              # simulation time in seconds
     dt = 0.05               # timestep in seconds
     time_map = get_time_grid(t_max, dt)
     episode_length = len(time_map)         # maximum episode length
-    mag_field = [-0.5, 0, 0.5]
+    mag_field = [-2, 0, 2]
     nstates = episode_length*len(mag_field) # total number of states
     nactions = len(mag_field)              # total number of possible actions
     print("\nStarting with the following parameters:")
@@ -343,9 +339,9 @@ if __name__ == "__main__":
     a = 0.9
     # alpha value and epsilon
     alpha = np.ones(episodes) * a
-    epsilon = np.linspace(0.8, 0.001,episodes) #epsilon gets smaller i.e. action become more greedy as episodes go on
+    epsilon = np.linspace(0.8, 0.01,episodes) #epsilon gets smaller i.e. action become more greedy as episodes go on
     # initialize the agent
-    learner = Agent(nstates, nactions, discount, max_reward=1, softmax=True, sarsa=True)
+    learner = Agent(nstates, nactions, discount, max_reward=1, softmax=True, sarsa=False)
     # perform the training
     start = [0,0]
     env, rewards, qstates, best = train_agent(learner, qtarget, qstart, start, mag_field,

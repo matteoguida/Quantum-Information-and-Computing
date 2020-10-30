@@ -19,63 +19,6 @@ from scipy.constants import hbar
 i = 0. + 1.j
 
 
-###########################################_OLD_########################################
-    
-def hamiltonian(field, single=True):
-    '''
-        Flexible implementation of naive ising hamiltonian
-    '''
-    if single:
-        H=np.array([[-1, -field],[-field, 1]], dtype=complex)
-        return(H)
-    else:
-        pass
-
-def time_evolution(psi, dt, field, euler=False):
-    '''
-    Function to implement time evolution for a pure quantum state.
-    ! WARNING: as of 22.10.2020 exact method only implements time evolution 
-               according to the hamiltonian H = -(Sx + field*Sz) for 1 QuBit.
-    Inputs:
-    # psi: np.array(dtype=complex), vector containing coefficients of the state to evolve
-    # dt: float, timestep
-    # field: float, magnetic field (parameter of the hamiltonian)
-    #euler: boolean, if "True" time evolution operator is approximated using euler method. 
-            If "False" exact method is used (spectral method).
-            Default value is "False".
-    Outputs:
-    # psi: np.array(dtype=complex), vector containing coefficients of the evolved state.
-    '''
-    if euler:
-        identity = np.diag(np.ones(len(psi)))
-        psi = np.dot((identity -i*hamiltonian(field)*dt), psi)
-        return(psi)
-    else:
-        hbar=1
-        #------------------------CLARA---------------------------------------------------------------------
-        if len(psi) == 2: #this method only works for one qubit
-            #implements evolution using spectral method for one qubit
-            #compute eigenstates of hamiltonian H = -(Sx + field*Sz) and normalize them
-            ep_state = np.array([field - np.sqrt(1 + field*field), 1], dtype=complex)
-            ep_state=ep_state/np.sqrt(np.vdot(ep_state,ep_state))
-            em_state = np.array([field + np.sqrt(1 + field*field), 1], dtype=complex)
-            em_state=em_state/np.sqrt(np.vdot(em_state,em_state))
-            #compute eigenvalues
-            ep_autoval = np.sqrt(1 + field*field)
-            em_autoval = -np.sqrt(1 + field*field)
-            #compute projections of the state to evolve over the eigenstates
-            cp = np.vdot(ep_state,psi)
-            cm = np.vdot(em_state,psi)
-            #compute evolved state
-            psi= cp * np.exp(- i * ep_autoval * dt / hbar) * ep_state + cm * np.exp(- i * em_autoval * dt / hbar) * em_state
-            return psi
-        else:
-            pass
-        #---------------------------------------------------------------------------------------------------
-    
-########################################################################################
-
-
 def hamiltonian_LA(field, L=1, diag=True, g=1):
 
     '''
@@ -146,7 +89,7 @@ def spectral_time_evolution(psi, dt, field, L=1):#, eigenvectors, eigenvalues):
     c_i = np.array([np.vdot(eigenvectors[:,i],psi) for i in range(len(psi))]) 
     temp_psi = []
     for i in range(len(psi)):
-        temp_psi.append(c_i[i]*np.exp((-1j*eigenvalues[i]*dt)/hbar)*eigenvectors[i])
+        temp_psi.append(c_i[i]*np.exp((-1j*eigenvalues[i]*dt)/hbar)*eigenvectors[:,i])
     evolved_psi = np.array(temp_psi).sum(axis=0)
     return evolved_psi
 
