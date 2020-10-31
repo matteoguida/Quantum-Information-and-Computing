@@ -126,9 +126,9 @@ def hamiltonian_LA(field, L=1, diag=True, g=1):
     from numpy import linalg as LA
 
     #pauli matrices
-    sigma_x=np.array([[0,1],[1,0]], dtype=complex)
+    sigma_x=1/2*np.array([[0,1],[1,0]], dtype=complex)
     #sigma_y=np.array([[0,-1j],[1j,0]], dtype=complex) # INUTILE
-    sigma_z=np.array([[1,0],[0,-1]], dtype=complex)
+    sigma_z=1/2*np.array([[1,0],[0,-1]], dtype=complex)
     sigma_z_interaction= np.kron(sigma_z,sigma_z)
 
     #create the hamiltonian according to the number of qubits
@@ -173,13 +173,12 @@ def spectral_time_evolution(psi, dt, field, L=1):#, eigenvectors, eigenvalues):
     #evolved_psi: np.array(dtype=complex), coefficients of the evolved state
     '''
 
-    from scipy.constants import hbar
-    hbar=1
+    
     eigenvalues, eigenvectors, _ = hamiltonian_LA(field, L, diag=True)
     c_i = np.array([np.vdot(eigenvectors[:,i],psi) for i in range(len(psi))]) 
     temp_psi = []
     for i in range(len(psi)):
-        temp_psi.append(c_i[i]*np.exp((-1j*eigenvalues[i]*dt)/hbar)*eigenvectors[i])
+        temp_psi.append(c_i[i]*np.exp((-1j*eigenvalues[i]*dt))*eigenvectors[:,i])
     evolved_psi = np.array(temp_psi).sum(axis=0)
     return evolved_psi
 

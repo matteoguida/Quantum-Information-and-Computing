@@ -21,36 +21,56 @@ def stochastic_descent(qstart, qtarget, L, T, nsteps, iterations, flips,exp_deca
 
     fidelity = compute_fidelity(qstart, qtarget)
     fidelity_values=[fidelity]
-    flips_iter = flips
-    for j in range(iterations):
+    '''flips_iter = flips
+    break_variable = 0'''
 
-        psi = deepcopy(qstart)
-        if exp_decay_flip is True:
-            flips_iter=int(exp_dec(iteration=j,percentage_flip=flips,niterations=iterations))
+    moves = np.arange(0,nsteps,1)
+    minima = False
 
-        index_update = np.random.randint(0, nsteps-1,size=int(nsteps/100*flips_iter)) # Select an index for the update.
-        temp_protocol[index_update] = random_protocol[index_update]*(-1) # Try to update that index.
-        
-        evolution = evolution_from_protocol(psi, qtarget, temp_protocol, spectral_time_evolution, dt, L, make_gif=None)
-        psi = evolution[-1]
-        
-        if check_norm and (np.abs(1 - compute_fidelity(psi,psi)) > 1e-13):
-            print("Warning ---> Norm is not conserved")
-            print(compute_fidelity(psi,psi))
-            break
+    while not minima:
 
-        temp_fidelity = compute_fidelity(qtarget, psi) # Evaluate the fidelity
-        if temp_fidelity>fidelity: # Update the change only if better fidelity
-            random_protocol=deepcopy(temp_protocol)
-            fidelity=temp_fidelity
-            #print("UPDATED ", "ITERATION N°",j )
-            #best_reached_state = psi #unused but useful for debugging
-        elif metropolis_choice is True:
-            if np.random.uniform(0,1)<np.exp(-beta*(temp_fidelity-fidelity)):
+        np.random.shuffle(moves)
+
+        for flip in moves: 
+
+            psi = deepcopy(qstart)
+
+            '''if exp_decay_flip is True:
+                flips_iter=int(exp_dec(iteration=j,percentage_flip=flips,niterations=iterations))'''
+
+            index_update = flip # Select an index for the update.
+            temp_protocol=deepcopy(random_protocol)
+            temp_protocol[index_update] = random_protocol[index_update]*(-1) # Try to update that index.
+            
+            evolution = evolution_from_protocol(psi, qtarget, temp_protocol, spectral_time_evolution, dt, L, make_gif=None)
+            psi = evolution[-1]
+            
+            if check_norm and (np.abs(1 - compute_fidelity(psi,psi)) > 1e-9):
+                print("Warning ---> Norm is not conserved")
+                print(compute_fidelity(psi,psi))
+                break
+
+            temp_fidelity = compute_fidelity(qtarget, psi) # Evaluate the fidelity
+            #break_variable +=1
+            if temp_fidelity>fidelity: # Update the change only if better fidelity
                 random_protocol=deepcopy(temp_protocol)
                 fidelity=temp_fidelity
-                #print("UPDATED LOWER FIDELITY ", "ITERATION N°",j )
-                #best_reached_state = psi 
-        fidelity_values.append(fidelity)
+                fidelity_values.append(fidelity)
+                #break_variable = 0
+                break
+            #otherwise protocol is kept and we move to the next flip, unles...
+            if flip==moves[-1]: #there is no more to flip
+                minima=True
 
+            '''    #best_reached_state = psi #unused but useful for debugging
+            elif metropolis_choice is True:
+                if np.random.uniform(0,1)<np.exp(-beta*(temp_fidelity-fidelity)):
+                    random_protocol=deepcopy(temp_protocol)
+                    fidelity=temp_fidelity'''
+
+            '''fidelity_values.append(fidelity)
+            if break_variable == nsteps:
+                break'''
+        
+    
     return random_protocol, fidelity_values
