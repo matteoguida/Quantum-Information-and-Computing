@@ -1,8 +1,9 @@
+#%%
 import numpy as np
 
-class hamiltonian_eig(object):
+class hamiltonian_eig:
 
-    def _init_(self, L, g, field):
+    def __init__(self, L, g, field):
         self.L=L
         self.field=field
         self.g=g
@@ -45,9 +46,9 @@ class hamiltonian_eig(object):
     
 
 
-class Qmodel(object):
+class quantum_model:
 
-    def _init_(self, qstart, qtarget, dt, history=True):
+    def __init__(self, qstart, qtarget, dt, history=True):
 
         self.qstart=qstart
         self.qtarget=qtarget
@@ -62,17 +63,14 @@ class Qmodel(object):
         if self.history:
             self.qstates_history.append(self.qcurrent)
 
-        #compute current fidelity and initialize it
         self.fidelity=None
-        self.compute_fidelity()
 
         #create hamiltonian variable which will comprehen
         self.hamiltonian=None
 
-   
 
     def evolve(self, L, field, g=1):
-        self.hamiltonian= hamiltonian_eig(L,g,field)
+        self.hamiltonian = hamiltonian_eig(L,g,field)
         c_i = np.array([np.vdot(self.hamiltonian.eigvect[:,i],self.qcurrent) for i in range(len(self.qcurrent))]) 
         temp_psi = []
         for i in range(len(self.qcurrent)):
@@ -106,5 +104,21 @@ class Qmodel(object):
 
     -L e g così vanno passati sempre ma tenerli dentro Qmodel mi sembrava poco coerente (sono oggetti che riguardano l'hamiltoniana quindi boh.)
     
+    -come faccio ad inizializzare una classe dentro una funzione di un'altra classe? (mi serve per hamiltonian)
     '''
 
+
+if __name__ == "__main__":
+
+    import numpy as np
+
+    qtarget = np.array([-1/np.sqrt(4) - 1/np.sqrt(4)*1.j, 1/np.sqrt(2) + 0.j])
+    qstart = np.array([+1/np.sqrt(4) + 1/np.sqrt(4)*1.j, 1/np.sqrt(2) + 0.j])
+
+    model = quantum_model(qstart, qtarget, dt=0.01, history=True)
+    model.evolve(L=1, field=0, g=1)
+
+    print(model.qcurrent)
+
+    print(model.compute_fidelity())
+# %%
