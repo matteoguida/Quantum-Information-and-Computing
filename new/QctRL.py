@@ -10,6 +10,7 @@
 #%%
 import numpy as np
 from environment import Environment
+from Qmodel import quantum_model
 import scipy.special as sp
 
 
@@ -42,7 +43,7 @@ class Agent:
         self._init_trace()
         if qtable is not None:
             qtable = np.array(qtable)
-            if np.shape(qtable)==[nstates, nactions]:
+            if np.shape(qtable)==[self.nstates, self.nactions]:
                 self.qtable = qtable
             else: 
                 print("WARNING ----> Qtable size doesn't match given arguments \n [nstates*nactions, nactions]=", [nstates*nactions, nactions], "\n Given:", np.shape(qtable))
@@ -83,14 +84,16 @@ class Agent:
 
         else:
             # use epsilon-greedy decision policy
-            max_idx = np.argwhere(qval == np.max(qval)) # useful to avoid biased behaviour when choosing among flat distribution
+            max_idx = np.argwhere(qval == np.max(qval)).flatten() # useful to avoid biased behaviour when choosing among flat distribution
+            if len(max_idx) == self.nactions: epsilon=0
             # assign equal value to all actions
             prob = np.ones(self.nactions) * epsilon / (self.nactions - len(max_idx))
             # the best action is taken with probability 1 - epsilon
-            prob[max_idx] = 1 - epsilon # here epsilon chooses how greedy the action is
+            prob[max_idx] = (1 - epsilon) / len(max_idx) # here epsilon chooses how greedy the action is
 
         return np.random.choice(range(0, self.nactions), p = prob)
         
+
     # update function (Sarsa and Q-learning)
     def update(self, action, alpha, epsilon):
         
@@ -134,6 +137,8 @@ class Agent:
     def train_episode(self, starting_action, alpha_vec, epsilon_vec):
         # intialize environement
         self.env.reset(starting_action)
+        self.env.model.reset()
+        self._init_trace()
         self.protocol = []
 
         for step in range(self.nsteps):
@@ -142,10 +147,12 @@ class Agent:
 
             # decision policy
             action = self.select_action(self.env.state.current, epsilon[step])
-            self.protocol.append(self.env.all_actions[self.env.state.action])# append action to protocol
 
             # move environement current ---> previous
             self.env.move(action, self.reward_bool)
+
+            self.protocol.append(self.env.all_actions[self.env.state.action])# append action to protocol
+            self.env.model.evolve(self.env.all_actions[self.env.state.action])
 
             #######################################
             ### SET QUANTUM STATE model EVOLUTION EITHER HERE OR INSIDE ENVIRONEMENT MOVE CALL (cleaner but too hidden)
@@ -200,15 +207,26 @@ if __name__ == "__main__":
     out_dir.mkdir(parents=True, exist_ok=True)
 
     ####### MODEL INIT #######
+    # Define target and starting state
+    qtarget = np.array([-1/np.sqrt(4) - 1/np.sqrt(4)*i, 1/np.sqrt(2) + 0.j])
+    qstart = np.array([+1/np.sqrt(4) + 1/np.sqrt(4)*i, 1/np.sqrt(2) + 0.j])
+    dt = 0.05
+
+    model = quantum_model(qstart, qtarget, dt)
+    model._init_inthamiltonian(L=1)
+    all_actions = [-4, 0, 4]
+    starting_action = 0
+    t_max = 2.4
+    episodes = 5001
 
     init_dict ={
         # Environment initialization
-        'all_actions' : [-2, 0, 2],           # available actions
-        'starting_action' : 0,                # starting action index
-        #'model' : model,
-        'dt' : 0.05,                          # time_step
-        't_max' : 2.4,                        # simulation time
-        'episodes' : 5001,                    # number of episodes
+        'all_actions' : all_actions,           # available actions
+        'starting_action' : starting_action,                # starting action index
+        'model' : model,
+        'dt' : dt,                          # time_step
+        't_max' : t_max,                        # simulation time
+        'episodes' : episodes,                    # number of episodes
     }
 
     time_map = get_time_grid(init_dict['t_max'], init_dict['dt'])
@@ -226,12 +244,8 @@ if __name__ == "__main__":
     print("\nStarting with the following parameters:")
     print("---> T=", init_dict['t_max'])
     print("---> dt=", init_dict['dt'])
-    print("---> N_states=", init_dict['nstates'])
+    print("---> N_states=", agent_init['nsteps']*agent_init['nactions'])
     print("---> Actions=", init_dict['all_actions'])
-
-    # Define target and starting state
-    qtarget = np.array([-1/np.sqrt(4) - 1/np.sqrt(4)*i, 1/np.sqrt(2) + 0.j])
-    qstart = np.array([+1/np.sqrt(4) + 1/np.sqrt(4)*i, 1/np.sqrt(2) + 0.j])
 
     a = 0.9
     # alpha value and epsilon
@@ -241,7 +255,7 @@ if __name__ == "__main__":
     
     # initialize the agent
     learner = Agent(agent_init)
-    #learner._init_evironment(model, starting_action, all_actions)
+    learner._init_evironment(model, starting_action, all_actions)
 
     from tqdm import tqdm
 
@@ -253,21 +267,18 @@ if __name__ == "__main__":
         learner.train_episode(starting_action, alpha, epsilon) # early stopping to implement
         rewards.append(learner.env.reward)
         #### BEST REWARD/PROTOCOL UPDATE ####
+        if best_reward < learner.env.reward:
+            best_protocol = learner.protocol
+            best_reward = learner.env.reward
+            best_path = learner.env.model.qstates_history
+            print('New best protocol {} with reward {}'.format(index, best_reward))
+
         #### VARIOUS VISUALIZATION TASKS ####
 
-
-
-
-    '''
-    # perform the training
-    start = [0,0]
-    env, rewards, qstates, best = train_agent(learner, qtarget, qstart, start, mag_field,
-                    dt, spectral_time_evolution, compute_fidelity, episodes, 
-                    episode_length, epsilon, alpha)#, make_gif=2000)
-
-    print("Best protocol Reward: {}".format(best[1]))
-    #create_gif(best[0], qstart, qtarget, 'protocolo'+str(t_max)+'-'+str(dt)+'.gif')
-
+#%%
+    #print("Best protocol Reward: {}".format(best_reward))
+    #create_gif(best_protocol, qstart, qtarget, 'protocolo'+str(t_max)+'-'+str(dt)+'.gif')
+    
     # plot result
     fname = 'train_result'+'_'+str(a)+'.png'
     fname = out_dir / fname
@@ -280,14 +291,10 @@ if __name__ == "__main__":
     plt.show()
     plt.close(fig=fig)
 
-    # generate final protocol
-    #final_protocol, protocol_qstate = generate_protocol(learner, qstart, start, 
-    #                                mag_field, dt, spectral_time_evolution, 
-    #                                compute_fidelity, episode_length)
-    '''
 
-    #%%           
-    print(learner.qtable.shape)              
-    for i in range(learner.qtable.shape[0]):
-        #if np.any(learner.qtable[i]!=0):
-        print(learner.qtable[i], i)
+    
+#%%           
+print(learner.qtable.shape)              
+for i in range(learner.qtable.shape[0]):
+    #if np.any(learner.qtable[i]!=0):
+    print(learner.qtable[i], i)

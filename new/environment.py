@@ -72,7 +72,7 @@ class Environment(object):
 
         self.time_step += 1 #increment time_step
 
-        self.action = action
+        self.state.action = action
         self.state.current = self.action_state_map(action)
 
         if self.history:
@@ -80,5 +80,5 @@ class Environment(object):
         
         # Compute model reward (possibly for last time step in episode)
         if final_bool:
-            self.reward = self.model.compute_fidelity(self.action)
+            self.reward = self.model.compute_fidelity()
         
