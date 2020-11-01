@@ -10,7 +10,6 @@
 #%%
 import numpy as np
 from environment import Environment
-from Qmodel import quantum_model
 import scipy.special as sp
 
 
@@ -193,15 +192,14 @@ def get_time_grid(t_max, dt):
 if __name__ == "__main__":
 
     ########## Standard initialization
-    from quantum_state import i, spectral_time_evolution, compute_fidelity
+    
+    from Qmodel import quantum_model
     from pathlib import Path
     import matplotlib.pyplot as plt
     from gif import create_gif
 
-    #-----CLARA-------------------------------------------
-    #custom module for visualization purpose
-    #from gif import *
-    #-----------------------------------------------------
+    i = 0. + 1.j
+
 
     out_dir = Path("test")
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -219,38 +217,28 @@ if __name__ == "__main__":
     t_max = 2.4
     episodes = 5001
 
-    init_dict ={
-        # Environment initialization
-        'all_actions' : all_actions,           # available actions
-        'starting_action' : starting_action,                # starting action index
-        'model' : model,
-        'dt' : dt,                          # time_step
-        't_max' : t_max,                        # simulation time
-        'episodes' : episodes,                    # number of episodes
-    }
-
-    time_map = get_time_grid(init_dict['t_max'], init_dict['dt'])
+    time_map = get_time_grid(t_max, dt)
 
     agent_init ={
         # Agent's initialization
         'nsteps' : len(time_map),                  # number of training episodes
-        'nactions' : len(init_dict['all_actions']),  
+        'nactions' : len(all_actions),  
         'discount' : 1,                            # exponential discount factor
         'max_reward' : 1,
         'softmax' : False,
-        'sarsa' : False
+        'sarsa' : True
     }
 
     print("\nStarting with the following parameters:")
-    print("---> T=", init_dict['t_max'])
-    print("---> dt=", init_dict['dt'])
+    print("---> T=", t_max)
+    print("---> dt=", dt)
     print("---> N_states=", agent_init['nsteps']*agent_init['nactions'])
-    print("---> Actions=", init_dict['all_actions'])
+    print("---> Actions=", all_actions)
 
     a = 0.9
     # alpha value and epsilon
-    alpha = np.ones(init_dict['episodes']) * a
-    epsilon = np.linspace(0.8, 0.01,init_dict['episodes']) #epsilon gets smaller i.e. action become more greedy as episodes go on
+    alpha = np.ones(episodes) * a
+    epsilon = np.linspace(0.8, 0.01, episodes) #epsilon gets smaller i.e. action become more greedy as episodes go on
 
     
     # initialize the agent
@@ -262,10 +250,11 @@ if __name__ == "__main__":
     # Train agent
     rewards = []
     best_reward = -1
-    for index in tqdm(range(init_dict['episodes'])):
-        #### MODEL ???? ####
+    for index in tqdm(range(episodes)):
+
         learner.train_episode(starting_action, alpha, epsilon) # early stopping to implement
         rewards.append(learner.env.reward)
+
         #### BEST REWARD/PROTOCOL UPDATE ####
         if best_reward < learner.env.reward:
             best_protocol = learner.protocol
@@ -273,13 +262,10 @@ if __name__ == "__main__":
             best_path = learner.env.model.qstates_history
             print('New best protocol {} with reward {}'.format(index, best_reward))
 
-        #### VARIOUS VISUALIZATION TASKS ####
-
-#%%
-    #print("Best protocol Reward: {}".format(best_reward))
-    #create_gif(best_protocol, qstart, qtarget, 'protocolo'+str(t_max)+'-'+str(dt)+'.gif')
+    #### VARIOUS VISUALIZATION TASKS ####
+    print("Best protocol Reward: {}".format(best_reward))
     
-    # plot result
+    # plot reward results
     fname = 'train_result'+'_'+str(a)+'.png'
     fname = out_dir / fname
     plt.close('all')
@@ -291,6 +277,9 @@ if __name__ == "__main__":
     plt.show()
     plt.close(fig=fig)
 
+    fname = 'protocol'+str(t_max)+'-'+str(dt)+'.gif'
+    fname = out_dir / fname
+    create_gif(best_path, qstart, qtarget, fname)
 
     
 #%%           

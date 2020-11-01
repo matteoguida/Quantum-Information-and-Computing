@@ -23,7 +23,7 @@ def qutip_qstate(coefs):
 
 def create_gif(qstates, qstart, qtarget, name):
     from tqdm import tqdm
-    from quantum_state import compute_fidelity
+    #from quantum_state import compute_fidelity
     '''
     Inputs:
     # qstates: list of states as np.arrays
