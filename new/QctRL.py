@@ -71,27 +71,37 @@ class Agent:
         return state_dict
 
     # action policy: implements epsilon greedy and softmax
-    def select_action(self, state, epsilon, greedy=False):
+    def select_action(self, state, epsilon, greedy=False, mode=''):
 
         qval = self.qtable[state] #selects a row in qtable
         prob = []
 
-        if (self.softmax) and greedy==False:
-            if epsilon==0: epsilon=1
-            # use Softmax distribution
-            prob = sp.softmax(qval / epsilon) #epsilon controls the "temperature" in the softmax
+        max_idx = np.argwhere(qval == np.max(qval)).flatten() # useful to avoid biased behaviour when choosing among flat distribution
 
+        greedy_action = np.random.choice(max_idx)
+
+        if not greedy:
+            if (self.softmax):
+                if epsilon==0: epsilon=1
+                # use Softmax distribution
+                prob = sp.softmax(qval / epsilon) #epsilon controls the "temperature" in the softmax
+                indA = np.random.choice(range(0, self.nactions), p = prob)
+            
+            else:
+                # use epsilon-greedy decision policy
+                if len(max_idx) == self.nactions: epsilon=0
+                # assign equal value to all actions
+                prob = np.ones(self.nactions) * epsilon / (self.nactions - len(max_idx))
+                # the best action is taken with probability 1 - epsilon
+                prob[max_idx] = (1 - epsilon) / len(max_idx) # here epsilon chooses how greedy the action is
+                indA = np.random.choice(range(0, self.nactions), p = prob)
+
+            if indA!=greedy_action:
+                self._init_trace()
         else:
-            # use epsilon-greedy decision policy
-            max_idx = np.argwhere(qval == np.max(qval)).flatten() # useful to avoid biased behaviour when choosing among flat distribution
-            if len(max_idx) == self.nactions: epsilon=0
-            # assign equal value to all actions
-            prob = np.ones(self.nactions) * epsilon / (self.nactions - len(max_idx))
-            # the best action is taken with probability 1 - epsilon
-            prob[max_idx] = (1 - epsilon) / len(max_idx) # here epsilon chooses how greedy the action is
-        #print(prob)
-
-        return np.random.choice(range(0, self.nactions), p = prob)
+            indA = greedy_action
+        
+        return indA
         
 
     # update function (Sarsa and Q-learning)
@@ -110,10 +120,10 @@ class Agent:
         # calculate long-term reward with bootstrap method
         ###### BEHAVIOURAL POLICY #######
         # find the next action (greedy for Q-learning, epsilon-greedy for Sarsa)
-        if (self.sarsa):
-            next_action = self.select_action(self.env.state.current, epsilon)
-        else:
-            next_action = self.select_action(self.env.state.current, 0, greedy=True)
+        #if (self.sarsa):
+        #    next_action = self.select_action(self.env.state.current, epsilon)
+        #else:
+        next_action = self.select_action(self.env.state.current, 0, greedy=True)
         #################################
 
         # "bellman error" associated with the behavioural policy
@@ -150,17 +160,41 @@ class Agent:
             # decision policy
             action = self.select_action(self.env.state.current, epsilon)
 
+            # evolve quantum model
+            self.env.model.evolve(self.env.all_actions[action])
+
             # move environement current ---> previous
             self.env.move(action, self.reward_bool)
 
-            self.protocol.append(self.env.all_actions[self.env.state.action])# append action to protocol
-            self.env.model.evolve(self.env.all_actions[self.env.state.action])
+            # append action to protocol
+            self.protocol.append(self.env.all_actions[self.env.state.action])
 
             #######################################
             ### SET QUANTUM STATE model EVOLUTION EITHER HERE OR INSIDE ENVIRONEMENT MOVE CALL (cleaner but too hidden)
             #######################################
 
             self.update(action, alpha, epsilon)
+
+    def train_agent(self, starting_action, episodes, alpha_vec, epsilon_vec, verbose=True):
+        from tqdm import tqdm
+
+        # Train agent
+        rewards = []
+        self.best_reward = -1
+        for index in tqdm(range(episodes)):
+
+            self.train_episode(starting_action, alpha_vec[index], epsilon_vec[index]) # early stopping to implement
+            rewards.append(self.env.reward)
+
+            #### BEST REWARD/PROTOCOL UPDATE ####
+            if self.best_reward < self.env.reward:
+                self.best_protocol = self.protocol
+                self.best_reward = self.env.reward
+                self.best_path = self.env.model.qstates_history
+                if verbose:
+                    print('New best protocol {} with reward {}'.format(index, self.best_reward))
+
+        return rewards
 
 
 def get_time_grid(t_max, dt):
@@ -189,8 +223,12 @@ if __name__ == "__main__":
 
     ####### MODEL INIT #######
     # Define target and starting state
-    qtarget = np.array([-1/np.sqrt(4) - 1/np.sqrt(4)*i, 1/np.sqrt(2) + 0.j])
-    qstart = np.array([+1/np.sqrt(4) + 1/np.sqrt(4)*i, 1/np.sqrt(2) + 0.j])
+    #qtarget = np.array([-1/np.sqrt(4) - 1/np.sqrt(4)*i, 1/np.sqrt(2) + 0.j])
+    #qstart = np.array([+1/np.sqrt(4) + 1/np.sqrt(4)*i, 1/np.sqrt(2) + 0.j])
+    qstart = np.array([-1/2 - (np.sqrt(5))/2 ,1], dtype=complex)
+    qtarget = np.array([+1/2 + (np.sqrt(5))/2 ,1], dtype=complex)
+    qstart=qstart/np.sqrt(np.vdot(qstart,qstart))
+    qtarget=qtarget/np.sqrt(np.vdot(qtarget,qtarget))
     dt = 0.05
 
     model = quantum_model(qstart, qtarget, dt)
@@ -198,7 +236,7 @@ if __name__ == "__main__":
     all_actions = [-4, 0, 4]
     starting_action = 0
     t_max = 2.4
-    episodes = 5001
+    episodes = 10001
 
     time_map = get_time_grid(t_max, dt)
 
@@ -208,7 +246,7 @@ if __name__ == "__main__":
         'nactions' : len(all_actions),  
         'discount' : 1,                            # exponential discount factor
         'max_reward' : 1,
-        'softmax' : True,
+        'softmax' : False,
         'sarsa' : False
     }
 
@@ -227,26 +265,11 @@ if __name__ == "__main__":
     # initialize the agent
     learner = Agent(agent_init)
     learner._init_evironment(model, starting_action, all_actions)
-
-    from tqdm import tqdm
-
-    # Train agent
-    rewards = []
-    best_reward = -1
-    for index in tqdm(range(episodes)):
-
-        learner.train_episode(starting_action, alpha[index], epsilon[index]) # early stopping to implement
-        rewards.append(learner.env.reward)
-
-        #### BEST REWARD/PROTOCOL UPDATE ####
-        if best_reward < learner.env.reward:
-            best_protocol = learner.protocol
-            best_reward = learner.env.reward
-            best_path = learner.env.model.qstates_history
-            print('New best protocol {} with reward {}'.format(index, best_reward))
+    # train
+    rewards = learner.train_agent(starting_action, episodes, alpha, epsilon, verbose=True)
 
     #### VARIOUS VISUALIZATION TASKS ####
-    print("Best protocol Reward: {}".format(best_reward))
+    print("Best protocol Reward: {}".format(learner.best_reward))
     
     # plot reward results
     fname = 'train_result'+'_'+str(a)+'.png'
