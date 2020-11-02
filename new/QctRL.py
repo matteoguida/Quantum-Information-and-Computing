@@ -18,7 +18,7 @@ class Agent:
     n_states = 1
     n_actions = 1
     discount = 0.9
-    lmbda = 1
+    lmbda = 0.8
     max_reward = 1
     qtable = np.matrix([1])
     softmax = False
@@ -71,12 +71,12 @@ class Agent:
         return state_dict
 
     # action policy: implements epsilon greedy and softmax
-    def select_action(self, state, epsilon):
+    def select_action(self, state, epsilon, greedy=False):
 
         qval = self.qtable[state] #selects a row in qtable
         prob = []
 
-        if (self.softmax):# and epsilon!=0:
+        if (self.softmax) and greedy==False:
             if epsilon==0: epsilon=1
             # use Softmax distribution
             prob = sp.softmax(qval / epsilon) #epsilon controls the "temperature" in the softmax
@@ -89,6 +89,7 @@ class Agent:
             prob = np.ones(self.nactions) * epsilon / (self.nactions - len(max_idx))
             # the best action is taken with probability 1 - epsilon
             prob[max_idx] = (1 - epsilon) / len(max_idx) # here epsilon chooses how greedy the action is
+        #print(prob)
 
         return np.random.choice(range(0, self.nactions), p = prob)
         
@@ -97,14 +98,14 @@ class Agent:
     def update(self, action, alpha, epsilon):
         
         # update trace
-        self.trace[self.env.state.previous, self.env.state.action] = 1
+        self.trace[self.env.state.previous, self.env.state.action] = alpha
 
         observed = - self.qtable[self.env.state.previous, self.env.state.action] + self.env.reward
 
         if self.reward_bool:
             # for last time step iteration
             self.qtable += alpha * observed * self.trace
-            return # to be checked
+            return
 
         # calculate long-term reward with bootstrap method
         ###### BEHAVIOURAL POLICY #######
@@ -112,14 +113,14 @@ class Agent:
         if (self.sarsa):
             next_action = self.select_action(self.env.state.current, epsilon)
         else:
-            next_action = self.select_action(self.env.state.current, 0)
+            next_action = self.select_action(self.env.state.current, 0, greedy=True)
         #################################
 
         # "bellman error" associated with the behavioural policy
         observed += self.discount * self.qtable[self.env.state.current, next_action]
         
         # bootstrap update
-        self.qtable += alpha * observed * self.trace
+        self.qtable += observed * self.trace
         self.trace *= (self.discount * self.lmbda)
 
     # simple output directory selector
@@ -133,7 +134,7 @@ class Agent:
         return name
 
 
-    def train_episode(self, starting_action, alpha_vec, epsilon_vec):
+    def train_episode(self, starting_action, alpha, epsilon):
         # intialize environement
         self.env.reset(starting_action)
         self.env.model.reset()
@@ -142,10 +143,12 @@ class Agent:
 
         for step in range(self.nsteps):
 
-            self.reward_bool = (step == self.nsteps -1) #decides whether to compute reward or not
+            #print(step)
+
+            self.reward_bool = (step == self.nsteps - 1) #decides whether to compute reward or not
 
             # decision policy
-            action = self.select_action(self.env.state.current, epsilon[step])
+            action = self.select_action(self.env.state.current, epsilon)
 
             # move environement current ---> previous
             self.env.move(action, self.reward_bool)
@@ -157,27 +160,7 @@ class Agent:
             ### SET QUANTUM STATE model EVOLUTION EITHER HERE OR INSIDE ENVIRONEMENT MOVE CALL (cleaner but too hidden)
             #######################################
 
-            self.update(action, alpha[step], epsilon[step])
-
-'''
-def generate_protocol(agent, qstart, start, mag_field, dt, time_ev_func, fidelity_func, episode_length, check_norm=True):
-    agent.sarsa = False
-    env = Environment(start=start, mag_field=mag_field, history=True)
-    ev_qstate = [qstart]
-    for j in range(0, episode_length):
-        # find indexed version of the state 
-        state_index = env.state[0] * len(mag_field) + env.state[1]
-        # choose an action
-        action = agent.select_action(state_index, 0)
-        # the agent moves in the environment
-        qstate = env.move(action, ev_qstate[j], dt, time_ev_func)
-        # check norm conservation
-        if check_norm and (np.abs(1 - fidelity_func(qstate, qstate)) > 1e-13):
-            print("Warning ---> Norm is not conserved")
-        ev_qstate.append(qstate)
-    final_protocol = [env.action_map[env.path[j,1]] for j in np.arange(len(env.path[:,1]))]
-    return final_protocol, ev_qstate
-'''
+            self.update(action, alpha, epsilon)
 
 
 def get_time_grid(t_max, dt):
@@ -225,8 +208,8 @@ if __name__ == "__main__":
         'nactions' : len(all_actions),  
         'discount' : 1,                            # exponential discount factor
         'max_reward' : 1,
-        'softmax' : False,
-        'sarsa' : True
+        'softmax' : True,
+        'sarsa' : False
     }
 
     print("\nStarting with the following parameters:")
@@ -252,7 +235,7 @@ if __name__ == "__main__":
     best_reward = -1
     for index in tqdm(range(episodes)):
 
-        learner.train_episode(starting_action, alpha, epsilon) # early stopping to implement
+        learner.train_episode(starting_action, alpha[index], epsilon[index]) # early stopping to implement
         rewards.append(learner.env.reward)
 
         #### BEST REWARD/PROTOCOL UPDATE ####
