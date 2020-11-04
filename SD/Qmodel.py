@@ -13,22 +13,27 @@ def compute_H_and_LA(L, g, field):
     #create the hamiltonian according to the number of qubits
     if L == 1:
         H = -field*sigma_x - g*sigma_z
+        
     else:
-        H1 = np.zeros((2**L,2**L))
-        H2 = np.zeros((2**L,2**L))
-        H3 = np.zeros((2**L,2**L))
+        H1 = np.zeros((2**L,2**L), dtype="complex128")
+        H2 = np.zeros((2**L,2**L), dtype="complex128")
+        H3 = np.zeros((2**L,2**L), dtype="complex128")
 
         for j in range(L-1):   
-            H1 = np.kron(np.identity(2**j),sigma_z_interaction)
-            H1 = np.kron(H1,np.identity(2**(L-j-2)))
+            
+            H1_temp = np.kron(sigma_z_interaction, np.identity(2**(L-j-2)))
+            H1+=np.kron(np.identity(2**(j)), H1_temp)
 
         for j in range(L):
-            H3 = np.kron(np.identity(2**j),sigma_x)
-            H3 = np.kron(H3,np.identity(2**(L-j-1)))
-            H2 = np.kron(np.identity(2**j),sigma_z)
-            H2 = np.kron(H2,np.identity(2**(L-j-1)))
+
+            H3_temp = np.kron(sigma_x, np.identity(2**(L-j-1)))
+            H3+=np.kron(np.identity(2**(j)), H3_temp)
+
+            H2_temp = np.kron(sigma_z, np.identity(2**(L-j-1)))
+            H2+=np.kron(np.identity(2**(j)), H2_temp)
 
         H = -(H1 + g*H2 + field*H3)
+        print(H)
     #compute and assign spectral quantities
     eigval, eigvect = LA.eig(H)
     spectral_dict = {"eigval":eigval , "eigvect":eigvect}
@@ -105,7 +110,7 @@ class quantum_model:
         return np.copy(self.qstates_history)
 
     
-if __name__ == "__main__":
+'''if __name__ == "__main__":
 
     import numpy as np
     from gif import create_gif
@@ -122,7 +127,21 @@ if __name__ == "__main__":
     protocol=[0]*100
     states=model.evolve_from_protocol(protocol)
     fname = 'test.gif'
-    create_gif(states, qstart, qtarget, fname)
+    create_gif(states, qstart, qtarget, fname)'''
 
 
+# %%
+a = compute_H_and_LA(2,1,4)
+
+
+sigma_z=1/2*np.array([[1,0],[0,-1]], dtype=complex)
+sigma_x=1/2*np.array([[0,1],[1,0]], dtype=complex)
+
+H3=np.kron(sigma_x,np.identity(2))
+H6=np.kron(np.identity(2),sigma_x)
+#print(H3+H6)
+
+H2=np.kron(sigma_z,np.identity(2))
+H5=np.kron(np.identity(2),sigma_z)
+#print(H2+H5)
 # %%
