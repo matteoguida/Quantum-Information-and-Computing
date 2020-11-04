@@ -175,7 +175,7 @@ class Agent:
             self.update(action, alpha, epsilon)
             
 
-    def train_agent(self, starting_action, episodes, alpha_vec, epsilon_vec, replay_freq, replay_episodes, verbose=False, epsilon_i=1, epsilon_f=0):
+    def train_agent(self, starting_action, episodes, alpha_vec, replay_freq, replay_episodes, verbose=False, epsilon_i=1, epsilon_f=0, test=10):
         from tqdm import tqdm
 
         # Train agent
@@ -187,23 +187,23 @@ class Agent:
         self.epsilon_i = epsilon_i
         epsilons = [self.epsilon_i]
         epsilon = self.epsilon_i
+        self.counter = 0
         mavg_rewards = [0]
         avg_reward = 0
         self.avg_reward = avg_reward
         #############################
 
         for index in tqdm(range(episodes)):
-            #epsilon = epsilon_vec[index] # Uses the old method
 
             self.train_episode(starting_action, alpha_vec[index], epsilon, replay=False)
             rewards.append(self.env.reward)
             mavg_rewards.append(((mavg_rewards[-1]*index) + self.env.reward)/(index+1))
 
             #############################
-            avg_reward += self.env.reward
+            #avg_reward += self.env.reward
             if index%20==0:
-                epsilon = self.update_greedyness(episodes, index, epsilon, avg_reward)
-                avg_reward = 0
+                epsilon = self.update_greedyness(episodes, index, epsilon, mavg_rewards[-1])
+                #avg_reward = 0
             epsilons.append(epsilon)
             #############################
 
@@ -235,13 +235,31 @@ class Agent:
         _, reward = self.generate_protocol(starting_action)
         rewards.append(reward)
 
+        if test is not None:
+            print("----> Testing convergence...")
+            test_sum = 0
+            for _ in range(test):
+                _, reward = self.generate_protocol(starting_action)
+                test_sum += reward
+            error = np.abs(self.best_reward - test_sum/test)
+            if error > 1e-3:
+                print("!WARNING: The Q-table does not converge. Deviating {} from best protocol fidelity".format(error))
+            else:
+                print("Learning seems to be fine!")
+
         return rewards, mavg_rewards, epsilons
 
 
-    def update_greedyness(self, episodes, episode, epsilon, avg_reward):
-        if epsilon > self.epsilon_f and avg_reward >= self.avg_reward:
-            self.avg_reward = avg_reward
-        return self.epsilon_f + (self.epsilon_i - self.epsilon_f)*np.exp(-10*episode/episodes)
+    def update_greedyness(self, episodes, episode, epsilon, avg_reward, max_steps=10, T=8):
+        # max_steps: decides how many steps to tolerate and how much increment to consider for reward threshold
+        # T: is the temperature factor in the exponential decay of the epsilon parameter
+        if (avg_reward >= self.avg_reward) or (self.counter >= max_steps):
+            self.avg_reward += (avg_reward-self.avg_reward)*(max_steps/100) # adds 10% of the increment
+            epsilon = self.epsilon_f + (self.epsilon_i - self.epsilon_f)*np.exp(-T*episode/episodes)
+            self.counter = 0
+        else:
+            self.counter += 1
+        return epsilon
 
 
     def generate_protocol(self, starting_action, **kwargs):
@@ -276,6 +294,50 @@ def get_time_grid(t_max, dt):
     tdict = {i : span[i] for i in range(len(span))}
     return tdict
 
+def protocol_analysis(qstart, qtarget, t_max_vec, n_steps, all_actions, **kwargs):
+
+    L=1
+    g=1
+    starting_action = 0
+    episodes = 20001
+    replay_freq=50
+    replay_episodes=40
+
+    # alpha value
+    a=0.9; eta=0.89
+    alpha = np.linspace(a, eta, episodes)
+
+    agent_init ={
+        # Agent's initialization
+        'nsteps' : n_steps,                  # number of training episodes
+        'nactions' : len(all_actions),  
+        'discount' : 1,                            # exponential discount factor
+        'softmax' : True,
+        'sarsa' : False
+    }
+
+    fidelities = []
+    for _, t_max in enumerate(t_max_vec):
+        print("\n Running training for T={}".format(t_max))
+
+        dt = t_max/n_steps
+        model = quantum_model(qstart, qtarget, dt, L, g, all_actions)
+
+        # initialize the agent
+        learner = Agent(agent_init)
+        learner._init_evironment(model, starting_action, all_actions)
+        # train
+        _ = learner.train_agent(starting_action, episodes, alpha, replay_freq, replay_episodes, verbose=False)
+
+        fidelities.append([t_max, learner.best_reward])
+        #### or ####
+        #_, R = learner.generate_protocol(starting_action)
+        #fidelities.append([t_max, R])
+    
+    return fidelities
+
+
+
 
 ############################################################################
 
@@ -302,7 +364,7 @@ if __name__ == "__main__":
     qstart=qstart/np.sqrt(np.vdot(qstart,qstart))
     qtarget=qtarget/np.sqrt(np.vdot(qtarget,qtarget))
 
-    t_max=2.4
+    t_max=4
     n_steps=100
     dt = t_max/n_steps
 
@@ -333,19 +395,16 @@ if __name__ == "__main__":
     print("---> N_states=", agent_init['nsteps']*agent_init['nactions'])
     print("---> Actions=", all_actions)
 
-    # alpha value and epsilon
+    # alpha value
     a=0.9
     eta=0.89
     alpha = np.linspace(a, eta, episodes)
-    epsilon = np.linspace(0, 7, episodes) #epsilon gets smaller i.e. action become more greedy as episodes go on
-    epsilon = np.exp(-epsilon)
-
     
     # initialize the agent
     learner = Agent(agent_init)
     learner._init_evironment(model, starting_action, all_actions)
     # train
-    rewards, avg_rewards, epsilons = learner.train_agent(starting_action, episodes, alpha, epsilon, replay_freq, replay_episodes, verbose=False)
+    rewards, avg_rewards, epsilons = learner.train_agent(starting_action, episodes, alpha, replay_freq, replay_episodes, verbose=False)
 
     #### VARIOUS VISUALIZATION TASKS ####
     print("Best protocol Reward: {}".format(learner.best_reward))
