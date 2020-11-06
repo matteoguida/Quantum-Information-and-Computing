@@ -92,7 +92,7 @@ class quantum_model:
         self.qcurrent = np.array(temp_psi).sum(axis=0)
 
         if check_norm and (np.abs(1 - compute_fidelity_ext(self.qcurrent,self.qcurrent)) > 1e-9):
-                print("Warning ---> Norm is not conserved")
+            print("Warning ---> Norm is not conserved")
 
         if self.history:
             self.qstates_history.append(self.qcurrent)
