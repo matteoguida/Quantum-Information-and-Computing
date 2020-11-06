@@ -289,11 +289,6 @@ class Agent:
         return self.protocol, self.env.reward
 
 
-def get_time_grid(t_max, dt):
-    span = np.arange(0, t_max, dt, dtype=float)
-    tdict = {i : span[i] for i in range(len(span))}
-    return tdict
-
 def protocol_analysis(qstart, qtarget, t_max_vec, n_steps, all_actions, **kwargs):
 
     L=1
@@ -302,6 +297,20 @@ def protocol_analysis(qstart, qtarget, t_max_vec, n_steps, all_actions, **kwargs
     episodes = 20001
     replay_freq=50
     replay_episodes=40
+
+    if 'L' in kwargs:
+        L = kwargs.get('L')
+        print("Overwritten default L with:",L)
+    if 'g' in kwargs:
+        g = kwargs.get('g')
+    if 'starting_action' in kwargs:
+        starting_action = kwargs.get('starting_action')
+    if 'episodes' in kwargs:
+        episodes = kwargs.get('episodes')
+    if 'replay_freq' in kwargs:
+        replay_freq = kwargs.get('replay_freq')
+    if 'replay_episodes' in kwargs:
+        replay_episodes = kwargs.get('replay_episodes')
 
     # alpha value
     a=0.9; eta=0.89
@@ -328,7 +337,7 @@ def protocol_analysis(qstart, qtarget, t_max_vec, n_steps, all_actions, **kwargs
         learner._init_evironment(model, starting_action, all_actions)
         # train
         _ = learner.train_agent(starting_action, episodes, alpha, replay_freq, replay_episodes, verbose=False)
-
+        print("Found protocol with fidelity:", learner.best_reward)
         fidelities.append([t_max, learner.best_reward])
         #### or ####
         #_, R = learner.generate_protocol(starting_action)
@@ -346,7 +355,7 @@ if __name__ == "__main__":
 
     ########## Standard initialization
     
-    from Qmodel import quantum_model
+    from Qmodel import quantum_model, ground_state
     from pathlib import Path
     import matplotlib.pyplot as plt
     from gif import create_gif
@@ -358,11 +367,37 @@ if __name__ == "__main__":
     out_dir.mkdir(parents=True, exist_ok=True)
 
     ####### MODEL INIT #######
+    ########## L=1 ###########
     # Define target and starting state
-    qstart = np.array([-1/2 - (np.sqrt(5))/2 ,1], dtype=complex)
-    qtarget = np.array([+1/2 + (np.sqrt(5))/2 ,1], dtype=complex)
-    qstart=qstart/np.sqrt(np.vdot(qstart,qstart))
-    qtarget=qtarget/np.sqrt(np.vdot(qtarget,qtarget))
+    #qstart = np.array([-1/2 - (np.sqrt(5))/2 ,1], dtype=complex)
+    #qtarget = np.array([+1/2 + (np.sqrt(5))/2 ,1], dtype=complex)
+    #qstart=qstart/np.sqrt(np.vdot(qstart,qstart))
+    #qtarget=qtarget/np.sqrt(np.vdot(qtarget,qtarget))
+
+    L=4
+
+    qstart = ground_state(L, -2)
+    qtarget = ground_state(L, +2)
+
+    n_steps=100
+    times_first_part=np.arange(0,1,0.1)
+    times_second_part=np.arange(1,4.1,0.1)
+    times=np.concatenate([times_first_part,times_second_part])
+    print(times)
+    h_list=[-4,0,4]
+
+    fidelities = protocol_analysis(qstart, qtarget, times, n_steps, h_list, L=L)
+    fname = out_dir / "fidelity_RL.txt"
+    np.savetxt(fname, fidelities, delimiter = ',')
+
+#%%
+    plt.plot(times, fidelities, linesyle='-.')
+
+
+
+#%%
+
+
 
     t_max=4
     n_steps=100
