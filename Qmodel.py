@@ -1,4 +1,5 @@
 #%%
+from profiler_decorator import profile
 import numpy as np
 import copy
 
@@ -82,14 +83,14 @@ class quantum_model:
         self.H_spectral_dict = {field : compute_H_and_LA(self.L, self.g, field) for field in self.h_list}
 
 
+    #@profile(sort_args=['name'], print_args=[25])
     def evolve(self, field, check_norm=True):
         eigvect = self.H_spectral_dict[field]["eigvect"]
-        eigval = self.H_spectral_dict[field]["eigval"]                                                  
-        c_i = np.array([np.vdot(eigvect[:,i],self.qcurrent) for i in range(len(self.qcurrent))]) 
-        temp_psi = []
-        for i in range(len(self.qcurrent)):
-            temp_psi.append(c_i[i]*np.exp((-1j*eigval[i]*self.dt))*eigvect[:,i])
-        self.qcurrent = np.array(temp_psi).sum(axis=0)
+        eigval = self.H_spectral_dict[field]["eigval"]
+        c = np.dot(np.conj(eigvect.transpose()), self.qcurrent)*np.exp((-1j*eigval*self.dt))
+        # black-magic
+        eigvect = c*eigvect
+        self.qcurrent = eigvect.sum(axis=1)
 
         if check_norm and (np.abs(1 - compute_fidelity_ext(self.qcurrent,self.qcurrent)) > 1e-9):
             print("Warning ---> Norm is not conserved")

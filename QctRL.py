@@ -6,8 +6,10 @@
 '''
 
 #%%
+from profiler_decorator import profile
 import numpy as np
 from environment import Environment
+from Qmodel import quantum_model
 import scipy.special as sp
 
 
@@ -146,6 +148,7 @@ class Agent:
         return name
 
 
+    #@profile(sort_args=['name'], print_args=[80])
     def train_episode(self, starting_action, alpha, epsilon, replay=False):
         # intialize environement
         self.env.reset(starting_action)
@@ -373,100 +376,67 @@ if __name__ == "__main__":
     #qtarget = np.array([+1/2 + (np.sqrt(5))/2 ,1], dtype=complex)
     #qstart=qstart/np.sqrt(np.vdot(qstart,qstart))
     #qtarget=qtarget/np.sqrt(np.vdot(qtarget,qtarget))
+    L_max = 9
+    fidelities = []
 
-    L=4
+    for L in range(1, L_max+1, 1):
 
-    qstart = ground_state(L, -2)
-    qtarget = ground_state(L, +2)
+        qstart = ground_state(L, -2)
+        qtarget = ground_state(L, +2)
 
-    n_steps=100
-    times_first_part=np.arange(0,1,0.1)
-    times_second_part=np.arange(1,4.1,0.1)
-    times=np.concatenate([times_first_part,times_second_part])
-    print(times)
-    h_list=[-4,0,4]
+        t_max=3.5
+        n_steps=100
+        dt = t_max/n_steps
+    
+        g=1
+        all_actions = [-4, 0, 4]
+        starting_action = 0
+        episodes = 20001
+        replay_freq=50
+        replay_episodes=40
 
-    fidelities = protocol_analysis(qstart, qtarget, times, n_steps, h_list, L=L)
-    fname = out_dir / "fidelity_RL.txt"
+        model = quantum_model(qstart, qtarget, dt, L, g, all_actions)
+
+        # alpha value
+        a=0.9
+        eta=0.89
+        alpha = np.linspace(a, eta, episodes)
+
+        agent_init ={
+            # Agent's initialization
+            'nsteps' : n_steps,                  # number of training episodes
+            'nactions' : len(all_actions),  
+            'discount' : 1,                            # exponential discount factor
+            'softmax' : True,
+            'sarsa' : False
+        }
+        # initialize the agent
+        learner = Agent(agent_init)
+        learner._init_evironment(model, starting_action, all_actions)
+        # train
+        _ = learner.train_agent(starting_action, episodes, alpha, replay_freq, replay_episodes, verbose=False)
+
+        fidelities.append([L, learner.best_reward])
+
+        #### VARIOUS VISUALIZATION TASKS ####
+        print("Best protocol Reward: {}".format(learner.best_reward))
+
+    fname = out_dir / "fidelity_T"+str(t_max)+"_Lmax"+str(L_max)+".txt"
     np.savetxt(fname, fidelities, delimiter = ',')
 
 #%%
-    plt.plot(times, fidelities, linesyle='-.')
+    #from pathlib import Path
+    #import matplotlib.pyplot as plt
+    #from gif import create_gif
+    #import numpy as np
+    #out_dir = Path("test")
+    #out_dir.mkdir(parents=True, exist_ok=True)
+    #fname = out_dir / "fidelity_T3.5_Lmax9.txt"
+    #fidelities = np.loadtxt(fname)
+    #plt.figure(figsize=(10,7))
+    #plt.plot(fidelities[:,0], fidelities[:,1], '-o', color='C1')#,linestyle='-.')#, linewidth=2)
+    #plt.hlines(1, fidelities[0,0], fidelities[-1,0], colors='C0')
+    #plt.xlabel("L")
+    #plt.ylabel("Fidelity")
+    #plt.show()
 
-
-
-#%%
-
-
-
-    t_max=4
-    n_steps=100
-    dt = t_max/n_steps
-
-    L=1
-    g=1
-    all_actions = [-4, 0, 4]
-    starting_action = 0
-    episodes = 20001
-    replay_freq=50
-    replay_episodes=40
-
-    model = quantum_model(qstart, qtarget, dt, L, g, all_actions)
-
-    #time_map = get_time_grid(t_max, dt)
-
-    agent_init ={
-        # Agent's initialization
-        'nsteps' : n_steps,                  # number of training episodes
-        'nactions' : len(all_actions),  
-        'discount' : 1,                            # exponential discount factor
-        'softmax' : True,
-        'sarsa' : False
-    }
-
-    print("\nStarting with the following parameters:")
-    print("---> T=", t_max)
-    print("---> dt=", dt)
-    print("---> N_states=", agent_init['nsteps']*agent_init['nactions'])
-    print("---> Actions=", all_actions)
-
-    # alpha value
-    a=0.9
-    eta=0.89
-    alpha = np.linspace(a, eta, episodes)
-    
-    # initialize the agent
-    learner = Agent(agent_init)
-    learner._init_evironment(model, starting_action, all_actions)
-    # train
-    rewards, avg_rewards, epsilons = learner.train_agent(starting_action, episodes, alpha, replay_freq, replay_episodes, verbose=False)
-
-    #### VARIOUS VISUALIZATION TASKS ####
-    print("Best protocol Reward: {}".format(learner.best_reward))
-
-    # plot reward results
-    total_episodes=episodes+np.floor(episodes/replay_freq)*replay_episodes
-
-    fname = 'train_result'+'_'+str(a)+'_'+str(eta)+'_'+str(t_max)+'.png'
-    fname = out_dir / fname
-    plt.close('all')
-    fig = plt.figure(figsize=(10,6))
-    plt.scatter(np.arange(0,total_episodes+1,1), rewards, marker = '.', alpha=0.8)
-    plt.scatter(np.arange(0,total_episodes,1), epsilons[1:], marker = '.', alpha=0.3)
-    plt.scatter(np.arange(0,total_episodes,1), avg_rewards[1:], marker = '.', alpha=0.8)
-    plt.xlabel('Episode number', fontsize=14)
-    plt.ylabel('Fidelity', fontsize=14)
-    plt.savefig(fname)
-    plt.show()
-    plt.close(fig=fig)
- 
-    fname = 'protocol'+str(t_max)+'-'+str(dt)+'.gif'
-    fname = out_dir / fname
-    create_gif(learner.best_path, qstart, qtarget, fname)
-
-    
-#%%           
-print(learner.qtable.shape)              
-for i in range(learner.qtable.shape[0]):
-    #if np.any(learner.qtable[i]!=0):
-    print(learner.qtable[i], i)
