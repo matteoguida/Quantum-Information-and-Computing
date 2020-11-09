@@ -7,10 +7,12 @@ if __name__ == "__main__":
     from pathlib import Path
     import matplotlib.pyplot as plt
     from gif import create_gif
+    import sys
 
     i = 0. + 1.j
 
 
+    #sys.stdout = open("train_profile.txt", "w")
     out_dir = Path("test")
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -26,7 +28,7 @@ if __name__ == "__main__":
     n_steps=100
     dt = t_max/n_steps
 
-    L=4
+    L=9
     qstart = ground_state(L, -2)
     qtarget = ground_state(L, +2)
 
@@ -67,6 +69,7 @@ if __name__ == "__main__":
 
     #### VARIOUS VISUALIZATION TASKS ####
     print("Best protocol Reward: {}".format(learner.best_reward))
+    #sys.stdout.close()
 
     # plot reward results
     total_episodes=episodes+np.floor(episodes/replay_freq)*replay_episodes

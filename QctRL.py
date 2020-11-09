@@ -362,6 +362,7 @@ if __name__ == "__main__":
     from pathlib import Path
     import matplotlib.pyplot as plt
     from gif import create_gif
+    import time
 
     i = 0. + 1.j
 
@@ -381,10 +382,12 @@ if __name__ == "__main__":
 
     for L in range(1, L_max+1, 1):
 
+        start = time.time()
+
         qstart = ground_state(L, -2)
         qtarget = ground_state(L, +2)
 
-        t_max=3.5
+        t_max=2.5
         n_steps=100
         dt = t_max/n_steps
     
@@ -416,12 +419,16 @@ if __name__ == "__main__":
         # train
         _ = learner.train_agent(starting_action, episodes, alpha, replay_freq, replay_episodes, verbose=False)
 
-        fidelities.append([L, learner.best_reward])
+        end = time.time()
+        timing = end-start
+
+        fidelities.append([L, learner.best_reward, timing])
 
         #### VARIOUS VISUALIZATION TASKS ####
-        print("Best protocol Reward: {}".format(learner.best_reward))
+        print("Best protocol Reward: {}\nElapsed time: {}".format(learner.best_reward, timing))
 
-    fname = out_dir / "fidelity_T"+str(t_max)+"_Lmax"+str(L_max)+".txt"
+    fname = "fidelity_T"+str(t_max)+"_Lmax"+str(L_max)+".txt"
+    fname = out_dir / fname
     np.savetxt(fname, fidelities, delimiter = ',')
 
 #%%
@@ -429,14 +436,32 @@ if __name__ == "__main__":
     #import matplotlib.pyplot as plt
     #from gif import create_gif
     #import numpy as np
+    #from scipy.optimize import curve_fit
+#
+#
     #out_dir = Path("test")
     #out_dir.mkdir(parents=True, exist_ok=True)
-    #fname = out_dir / "fidelity_T3.5_Lmax9.txt"
-    #fidelities = np.loadtxt(fname)
+    #fname = out_dir / "fidelity_T2.5_Lmax9.txt"
+    #fidelities = np.loadtxt(fname, delimiter=',')
     #plt.figure(figsize=(10,7))
-    #plt.plot(fidelities[:,0], fidelities[:,1], '-o', color='C1')#,linestyle='-.')#, linewidth=2)
-    #plt.hlines(1, fidelities[0,0], fidelities[-1,0], colors='C0')
-    #plt.xlabel("L")
-    #plt.ylabel("Fidelity")
+    #plt.plot(2**(fidelities[:,0]), fidelities[:,1], '-o', color='C1')
+    ##plt.hlines(1, fidelities[0,0], fidelities[-1,0], colors='C0')
+    #plt.xlabel("Matrix size", fontsize=14)
+    #plt.ylabel("Computation Time (minutes)", fontsize=14)
+    #fname = out_dir / 'time_scaling.png'
+    #print(2**(fidelities[:,0]))
+    ##np.polyfit(2**(fidelities[:,0]), fidelities[:,2]/60, 0)
+#
+    #def func(x, a):
+    #    return x**(a)
+#
+    #x = 2**(fidelities[:,0])
+    #y = fidelities[:,2]
+    #out = curve_fit(func, x, y)
+    #print(out)
+#
+    ##plt.plot(x, x**out[0])
+#
+    #plt.savefig(fname)
     #plt.show()
 

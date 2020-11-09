@@ -31,5 +31,5 @@ if __name__ == "__main__":
     h_list=[-4,0,4]
 
     fidelities = protocol_analysis(qstart, qtarget, times, n_steps, h_list, L=L)
-    fname = out_dir / "fidelity_RL.txt"
+    fname = out_dir / "fidelity_RL_L_"+str(L)+".txt"
     np.savetxt(fname, fidelities, delimiter = ',')
