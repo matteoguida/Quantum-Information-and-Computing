@@ -1,3 +1,9 @@
+'''
+    Created on Oct 25th, 2020
+    @authors: Alberto Chimenti, Clara Eminente and Matteo Guida.
+    Purpose: (PYTHON3 IMPLEMENTATION)
+        Function for time profiling used to improve effeciency.
+'''
 from cProfile import Profile
 import pstats
 

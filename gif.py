@@ -1,4 +1,11 @@
 
+'''
+    Created on Oct 25th, 2020
+    @authors: Alberto Chimenti, Clara Eminente and Matteo Guida.
+    Purpose: (PYTHON3 IMPLEMENTATION)
+        Program to create a gif of the time evolution on the Bloch sphere. 
+'''
+
 #plotting on Bloch sphere
 import matplotlib as mpl
 from pylab import *
