@@ -101,8 +101,8 @@ class quantum_model:
         ''' Given the value of the control field and considered the associated hamiltonian in H_spectral_dict, the self.qcurrent attribute 
         is evolved for that H and the dt.'''
 
-        eigvect = self.H_spectral_dict[field]["eigvect"]
-        eigval = self.H_spectral_dict[field]["eigval"]
+        eigvect = copy.deepcopy(self.H_spectral_dict[field]["eigvect"])
+        eigval  = copy.deepcopy(self.H_spectral_dict[field]["eigval"])
 
         # Compute a vector with entries coefficients for linear combination of eigenstates.
         c = np.dot(np.conj(eigvect.transpose()), self.qcurrent)*np.exp((-1j*eigval*self.dt))
