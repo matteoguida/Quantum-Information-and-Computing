@@ -1,4 +1,3 @@
-
 '''
     Created on Oct 25th, 2020
     @authors: Alberto Chimenti, Clara Eminente and Matteo Guida.
@@ -7,12 +6,9 @@
 '''
 
 #plotting on Bloch sphere
-import matplotlib as mpl
-from pylab import *
-from qutip import *
-from matplotlib import cm
+from qutip import basis, Bloch
+import matplotlib.pyplot as plt
 import imageio
-from mpl_toolkits.mplot3d import Axes3D
 
 def qutip_qstate(coefs):
     '''
@@ -40,13 +36,10 @@ def create_gif(qstates, qstart, qtarget, name):
     '''
     
     b = Bloch()
-
-
-    b = Bloch()
-    duration=20 #framerate
+    duration=5 #framerate
     images=[]
 
-    for (qstate,i) in zip(qstates, np.arange(0,len(qstates))):
+    for (qstate,i) in zip(qstates, range(0,len(qstates))):
 
         b.clear()
 

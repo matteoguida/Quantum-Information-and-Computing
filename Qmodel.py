@@ -143,8 +143,7 @@ class quantum_model:
         self.H_spectral_dict = {field : compute_H_and_LA(self.L, self.g, field) for field in self.h_list}
 
     # Profile the bottlenecks in evolve function. 
-    # @profile(sort_args=['name'], print_args=[25])
-
+    #@profile(sort_args=['name'], print_args=[25])
     def evolve(self, field, check_norm=True):
         ''' 
 

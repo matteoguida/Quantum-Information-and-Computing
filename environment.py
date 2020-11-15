@@ -17,10 +17,10 @@ class state_object(object):
     """
 
     def __init__(self):
-        self.initial = None  
-        self.previous = None 
+        self.initial = None
+        self.previous = None
         self.action = None # Action(index) which moved previous-->current
-        self.current = None 
+        self.current = None
         self.visited = [] #List of visited states
 
 class Environment(object):
@@ -60,7 +60,7 @@ class Environment(object):
 
     def reset(self, starting_action=0):
 
-        # resets environment (at the beginning of an episode, for example)
+        # resets environment
 
         self.state = state_object() #Saved as indexed quantity for Q-table indexing
 
@@ -77,7 +77,6 @@ class Environment(object):
 
 
     def action_state_map(self, action_idx, t=None):
-
         '''
         This function maps action index into a state indexing for accessing the right Q-table entry. 
         Returns an index to access the Q-Table with.
@@ -99,7 +98,6 @@ class Environment(object):
             return self.time_step*len(self.all_actions) + action_idx
     
     def state_action_map(self, state, time_step):
-
         '''
         This function maps state index into an action index (i.e. starting from a state retrieves the corresponding action).
         This is basically the inverse of action_state_map.
@@ -113,7 +111,6 @@ class Environment(object):
         
         '''
 
-        
         return state - time_step*len(self.all_actions)
 
 
