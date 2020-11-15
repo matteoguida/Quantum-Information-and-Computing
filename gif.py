@@ -1,3 +1,9 @@
+'''
+    Created on Oct 25th, 2020
+    @authors: Alberto Chimenti, Clara Eminente and Matteo Guida.
+    Purpose: (PYTHON3 IMPLEMENTATION)
+        Program to create a gif of the time evolution on the Bloch sphere. 
+'''
 
 #plotting on Bloch sphere
 from qutip import basis, Bloch
@@ -22,8 +28,6 @@ def qutip_qstate(coefs):
 
 
 def create_gif(qstates, qstart, qtarget, name):
-    from tqdm import tqdm
-    #from quantum_state import compute_fidelity
     '''
     Inputs:
     # qstates: list of states as np.arrays
@@ -31,8 +35,6 @@ def create_gif(qstates, qstart, qtarget, name):
     # name: name of the output gif
     '''
     
-    b = Bloch()
-
     b = Bloch()
     duration=5 #framerate
     images=[]

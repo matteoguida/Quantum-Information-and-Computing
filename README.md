@@ -5,11 +5,16 @@ Repository for the Quantum Information and Computation course
 
 ### Prerequisites
 Python versions used and supported:
-TODO
+    - Python 3.6 (and higher)
 
-###  Description and Results
-Reinforcement Learning model-free quantum control on many coupled qubits.
-TODO
+###  Description and Usage
+Reinforcement Learning algorithm for finding optimal protocols for a N-qubit system.
+
+#### RL Usage:
+In order to run the training just run:
+  >python RL_training.py
+Use flag -h or --help to print a brief description of the script and useful informations about init parameters.
+
 ### Authors:
 
 - [Alberto Chimenti](https://github.com/albchim) (University of Padova)
