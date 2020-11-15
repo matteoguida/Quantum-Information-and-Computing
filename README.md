@@ -24,4 +24,4 @@ Controlling non-integrable many-body quantum systems of interacting qubits is cr
 - [Matteo Guida](https://github.com/matteoguida) (University of Padova)
 
 ### Useful External Links:
-[1] [M. Bukov, A. G. R. Day, D. Sels, P. Weinberg, A. Polkovnikov, and P. Mehta, Reinforcement learning indifferent phases of quantum control,Phys. Rev. X8, 031086 (2018).](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.8.031086)
+[1] [M. Bukov, A. G. R. Day, D. Sels, P. Weinberg, A. Polkovnikov, and P. Mehta, Reinforcement learning in different phases of quantum control,Phys. Rev. X8, 031086 (2018).](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.8.031086)
