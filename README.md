@@ -1,7 +1,7 @@
 # Quantum_Information_Project
 
 <p align="center">
-	<img src="protocol_1_4.gif.mp4" alt="drawing" width="400"/>
+	<img src="protocol_1_4.gif" alt="drawing" width="400"/>
 </p>
 
 ### Prerequisites
