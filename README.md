@@ -7,7 +7,7 @@
 ### Prerequisites
 Python versions supported:
 
-[![](https://img.shields.io/badge/python-3.7+ -blue.svg)](https://badge.fury.io/py/root_pandas)
+[![](https://img.shields.io/badge/python-3.7+-blue.svg)](https://badge.fury.io/py/root_pandas)
 
 ### Authors:
 
