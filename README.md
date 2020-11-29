@@ -24,6 +24,6 @@ In order to run the training just run:
 Use flag -h or --help to print a brief description of the script and useful informations about init parameters.
 
 ### Useful External Links:
-[1] Bukov,   A.  G.  R.  Day,   D.  Sels,   P.  Wein-berg,  A.  Polkovnikov,  and  P.  Mehta,  [Reinforcement learning in different phases of quantum control](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.8.031086), Phys. Rev. X8, 031086 (2018). 
+[1] Bukov,   A.  G.  R.  Day,   D.  Sels,   P.  Weinberg,  A.  Polkovnikov,  and  P.  Mehta,  [Reinforcement learning in different phases of quantum control](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.8.031086), Phys. Rev. X8, 031086 (2018). 
 
 [2] S. Montangero, [Introduction to Tensor Network Methods: Numerical simulations of low-dimensional many body quantum systems](https://www.springer.com/gp/book/9783030014087) (Springer Nature Switzerland AG, 2018).
