@@ -26,5 +26,6 @@ Use flag -h or --help to print a brief description of the script and useful info
 - [Matteo Guida](https://github.com/matteoguida) (University of Padova)
 
 ### Useful External Links:
-[1] Bukov,   A.  G.  R.  Day,   D.  Sels,   P.  Wein-berg,  A.  Polkovnikov,  and  P.  Mehta,  Reinforce-ment learning in different phases of quantum con-trol, ([Phys. Rev. X8, 031086 (2018)](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.8.031086).
+[1] Bukov,   A.  G.  R.  Day,   D.  Sels,   P.  Wein-berg,  A.  Polkovnikov,  and  P.  Mehta,  Reinforce-ment learning in different phases of quantum control, ([Phys. Rev. X8, 031086 (2018)](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.8.031086). 
+
 [2] S. Montangero, [Introduction to Tensor Network Methods: Numerical simulations of low-dimensional many body quantum systems (Springer Nature Switzerland AG, 2018)](https://www.springer.com/gp/book/9783030014087).
