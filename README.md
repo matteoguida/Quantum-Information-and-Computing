@@ -1,4 +1,4 @@
-# Quantum_Information_Project
+# QUANTUM INFORMATION AND COMPUTING
 
 <p align="center">
 	<img src="Gif_L1.gif" alt="drawing" width="400"/>
