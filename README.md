@@ -1,6 +1,6 @@
 # QUANTUM INFORMATION AND COMPUTING
 
-![Alt Text](https://media.giphy.com/media/8Lcy1kKf2xa8H5q9xa/source.mov)
+![](https://media.giphy.com/media/8Lcy1kKf2xa8H5q9xa/giphy.gif)
 
 ### Prerequisites
 Python versions supported:
