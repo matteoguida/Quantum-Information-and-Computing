@@ -1,8 +1,6 @@
 # QUANTUM INFORMATION AND COMPUTING
 
-<video width="320" height="240" controls>
-  <source src="protocol_1_4.mp4" type="video/mp4">
-</video>
+![Alt Text](https://media.giphy.com/media/8Lcy1kKf2xa8H5q9xa/source.mov)
 
 ### Prerequisites
 Python versions supported:
