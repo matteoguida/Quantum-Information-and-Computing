@@ -1,8 +1,8 @@
 # QUANTUM INFORMATION AND COMPUTING
 
-<p align="center">
-	<img src="Gif_L1.gif" alt="drawing" width="400"/>
-</p>
+<video width="320" height="240" controls>
+  <source src="protocol_1_4.mp4" type="video/mp4">
+</video>
 
 ### Prerequisites
 Python versions supported:
@@ -16,7 +16,8 @@ Python versions supported:
 - [Matteo Guida](https://github.com/matteoguida) (University of Padova)
 
 # Goal and Results 
-Controlling non-integrable many-body quantum systems of interacting qubits is crucial in many areas of physics and in particular in quantum information science. In the following work a **Reinforcement Learning** (RL) algorithm is implemented in order to find an **optimal protocol** that drives a quantum system from an initial to a target state in two study cases: a single isolated qubit and a closed chain of **L coupled qubits**. For both cases the obtained results are compared with the ones achieved through **Stochastic Descent** (SD). What has been found is that, for a single qubit, both methods find optimal protocols whenever the total protocol duration T allows it. When the number of qubits increases RL turns out to be more flexible and to require less tuning in order to find better solutions. We also find that both algorithms capture the role of T. The work is based on some of the results obtained in [1]
+Controlling non-integrable many-body quantum systems of interacting qubits is crucial in many areas of physics and in particular in quantum information science. In the following work a **Reinforcement Learning** (RL) algorithm is implemented in order to find an **optimal protocol** that drives a quantum system from an initial to a target state in two study cases: a single isolated qubit and a closed chain of **L coupled qubits**. For both cases the obtained results are compared with the ones achieved through **Stochastic Descent** (SD). 
+What has been found is that, for a single qubit, both methods find optimal protocols whenever the total protocol duration T allows it. When the number of qubits increases RL turns out to be more flexible and to require less tuning in order to find better solutions. We also find that both algorithms capture the role of T. The work is based on some of the results obtained in [1]
 
 #### RL and SD Usage:
 In order to run the training just run:
