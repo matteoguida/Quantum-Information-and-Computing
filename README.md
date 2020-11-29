@@ -1,6 +1,8 @@
 # Quantum_Information_Project
 
-<img src=https://www.researchgate.net/publication/335028508/figure/fig1/AS:789466423762944@1565234871365/The-Bloch-sphere-provides-a-useful-means-of-visualizing-the-state-of-a-single-qubit-and.ppm width="500" height="450" border="0"/> 
+<p align="center">
+	<img src="Lab_06/results/GIFs/full_maze.gif" alt="drawing" width="400"/>
+</p>
 
 ### Prerequisites
 Python versions supported:
@@ -14,7 +16,7 @@ Python versions supported:
 - [Matteo Guida](https://github.com/matteoguida) (University of Padova)
 
 # Goal and Results 
-Controlling non-integrable many-body quantum systems of interacting qubits is crucial in many areas of physics and in particular in quantum information science. In the following work a Reinforcement Learning (RL) algorithm is implemented in order to find an optimal protocol that drives a quantum system from an initial to a target state in two study cases: a single isolated qubit and a closed chain of L coupled qubits. For both cases the obtained results are compared with the ones achieved through Stochastic Descent (SD). What has been found is that, for a single qubit, both methods find optimal protocols whenever the total protocol duration $T$ allows it. When the number of qubits increases RL turns out to be more flexible and to require less tuning in order to find better solutions. We also find that both algorithms capture the role of T. The work is based on some of the results obtained in [1]
+Controlling non-integrable many-body quantum systems of interacting qubits is crucial in many areas of physics and in particular in quantum information science. In the following work a Reinforcement Learning (RL) algorithm is implemented in order to find an optimal protocol that drives a quantum system from an initial to a target state in two study cases: a single isolated qubit and a closed chain of L coupled qubits. For both cases the obtained results are compared with the ones achieved through Stochastic Descent (SD). What has been found is that, for a single qubit, both methods find optimal protocols whenever the total protocol duration T allows it. When the number of qubits increases RL turns out to be more flexible and to require less tuning in order to find better solutions. We also find that both algorithms capture the role of T. The work is based on some of the results obtained in [1]
 
 #### RL Usage:
 In order to run the training just run:
